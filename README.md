@@ -2,6 +2,8 @@
 
 The DataView Tree helper adds support for working with tree data structures to a DataView. This is done by adding a new behavior to the DataView that is a parent behavior of the standard DataView behavior. The new behavior adds commands for toggling the expanded state of nodes in a tree, expanding any nodes in the tree necessary to show a specific node, determining node ancestry, and descendants, finding nodes, determining the level of a node, and determining relative row position of a child to a parent.
 
+The helper does not provide support for creating UI elements such as a toggle. It only provides handlers that your UI elements can call.
+
 In order to use the DataView Tree helper you must do two things:
 
 1. Assign the behavior of your DataView control to `stack "DataView Tree Behavior"`. If you are already using a custom behavior with your DataView then assign the behavior of your custom behavior to `stack "DataView Tree Behavior"`.
