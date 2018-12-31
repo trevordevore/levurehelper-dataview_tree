@@ -1002,7 +1002,7 @@ pLevelsDown: The number of levels down to expand. Leave empty to expand all chil
 
 Returns: empty
 */
-command _setNodeAncestorExpandedState pNodeIndexA, pExpandedState, pLevelsDown, @xCurrentLevel
+private command _setNodeAncestorExpandedState pNodeIndexA, pExpandedState, pLevelsDown, @xCurrentLevel
   local tCurrentLevel
 
   put pExpandedState is true into pExpandedState
