@@ -1,27 +1,187 @@
 script "DataView Tree Behavior" with behavior "DataView Group Behavior"
+
+local sTreeA
+local sNodeIdNodeLookupA # key = node id, value = node index array in sTreeA
+local sRowtoNodeIdLookupA # key = row, value = node id. Lookup in sNodeIdNodeLookupA.
+local sRebuildLookupTable = "false"
+
 /**
-Summary: Toggles the exanded state of a row.
+Summary: Sets the tree used to display source tree data.
 
 Parameters:
-xDataSetA: The data set containing the tree that is displayed in the DataView. Values in this array will be updated.
+pTreeA: An array representing tree used to draw the tree in the DataView.
+
+Description:
+Displaying a data source that has a tree structure requires two trees. The
+data source itself as well as the tree used by the DataView Tree behavior.
+The DataView uses an array that is populated with node arrays. A node array has
+the following format:
+
+```
+pNodeA[type|id|expanded|children|is leaf]
+```
+
+A node can have other nodes as `children`. A tree is made up of one or more
+nodes.
+
+```
+pTreeA[1][type|id|expanded|children|is leaf]
+pTreeA[n][type|id|expanded|children|is leaf]
+```
+
+Here is an example of a tree with three nodes – one node at the root, one node
+as a child of the root node, and one node as the child of the child of the root node.
+
+```
+pTreeA[1]["type"]
+pTreeA[1]["id"]
+pTreeA[1]["expanded"]
+pTreeA[1]["is leaf"]
+pTreeA[1]["children"]
+pTreeA[1]["children"][1]["type"]
+pTreeA[1]["children"][1]["id"]
+pTreeA[1]["children"][1]["expanded"]
+pTreeA[1]["children"][1]["is leaf"]
+pTreeA[1]["children"][1]["children"]
+pTreeA[1]["children"][1]["children"][1]["type"]
+pTreeA[1]["children"][1]["children"][1]["id"]
+pTreeA[1]["children"][1]["children"][1]["expanded"]
+pTreeA[1]["children"][1]["children"][1]["is leaf"]
+pTreeA[1]["children"][1]["children"][1]["children"]
+```
+
+At a minimum you should define the `type` and `id` properties for each node.
+`id` should uniquely identify the node in the entire tree. `type` is used to
+distinguish nodes from each other.
+`expanded` is a boolean value and defaults to `false` if no value is present.
+
+Returns: nothing
+*/
+setProp dvtTree pTreeA
+  put pTreeA into sTreeA
+  _buildRowToNodeLookup
+  put false into sRebuildLookupTable
+end dvtTree
+
+
+/**
+Summary: Returns the internal tree array.
+
+Returns: Array
+*/
+getProp dvTree
+  return sTreeA
+end dvTree
+
+
+/**
+Summary: Build lookup tables so that `NumberOfRows` can return correct value.
+
+Returns: nothing
+*/
+command RenderView
+  if sRebuildLookupTable then
+    _buildRowToNodeLookup
+    put false into sRebuildLookupTable
+  end if
+  pass RenderView
+end RenderView
+
+
+command DataForRow pRow, @rData, @rTemplateStyle
+  local tNodeA, tIndexA
+
+  put sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] into tIndexA
+  put sTreeA[ tIndexA ]["id"] into tNodeA["id"]
+  put sTreeA[ tIndexA ]["type"] into tNodeA["type"]
+  put sTreeA[ tIndexA ]["expanded"] into tNodeA["expanded"]
+  put sTreeA[ tIndexA ]["is leaf"] into tNodeA["is leaf"]
+  put _nodeLevel(tIndexA) into tNodeA["level"]
+  put the number of elements of sTreeA[ tIndexA ]["children"] into tNodeA["child count"]
+
+  dispatch "DataForNode" with tNodeA, pRow, rData, rTemplateStyle
+end DataForRow
+
+
+function NumberOfRows
+  return the number of elements of sRowtoNodeIdLookupA
+end NumberOfRows
+
+
+function CacheKeyForRow pRow
+  return sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["id"]
+end CacheKeyForRow
+
+
+/**
+Summary: Refreshes the view after toggling or showing nodes.
+
+Description:
+When calling handlers that toggle the expanded state of a node(s) the UI
+is not updated. This allows you to update multiple nodes and redraw all at
+once. Call this handler when you are ready to redraw the view.
+
+Returns: nothing
+*/
+command RefreshView
+  _refreshView
+  return empty
+end RefreshView
+
+
+/**
+Summary: Expands all rows in the tree.
+
+Description:
+Call `RefreshView` to redraw the view.
+
+Returns: nothing
+*/
+command ExpandAllNodes
+  _setExpandedInTreeBranch sTreeA, empty, true
+  put true into sRebuildLookupTable
+  _refreshView
+end ExpandAllNodes
+
+
+/**
+Summary: Contracts all rows in the tree.
+
+Description:
+Call `RefreshView` to redraw the view.
+
+Returns: nothing
+*/
+command CollapseAllNodes
+  _setExpandedInTreeBranch sTreeA, empty, false
+  put true into sRebuildLookupTable
+  _refreshView
+end CollapseAllNodes
+
+
+/**
+Summary: Sets the expanded state of a row.
+
+Parameters:
 pRow: The row to toggle.
 pLevelsDown: How many levels to toggle. Empty or 0 only toggles pRow. -1 toggles all. Positive number affects that many levels down.
 pExpandedState: Pass in a true/false to force a setting.
+pRefreshView: Pass in false to keep the view from being refreshed.
 
-Returns: The new row number of pRow after the toggle.
+Description:
+By default the DataView will be redrawn after calling this handler and the newly displayed
+children nodes will be scrolled into view. If you pass in `false` for `pRefreshView`
+then call `RefreshView` to redraw the view.
+
+Returns: Nothing
 */
-command TreeToggleRow @xDataSetA, pRow, pLevelsDown, pExpandedState
-  local tSelElementKeys, tElementKey
-  local tCurrentLevel, tChildNodes, tItemNo
-  local i
+command SetRowIsExpanded pRow, pLevelsDown, pExpandedState, pRefreshView
+  local tNodeIndexA
+  local tCurrentLevel
 
-  set the wholematches to true
+  put pRefreshView is not false into pRefreshView
 
-  # store selected elements
-  put the dvHilitedRows of me into tSelElementKeys
-  repeat with i = 1 to the number of items of tSelElementKeys
-    put item (item i of tSelElementKeys) of xDataSetA["visible nodes"] into item i of tSelElementKeys
-  end repeat
+  put sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] into tNodeIndexA
 
   if pLevelsDown is empty then
     put 0 into pLevelsDown
@@ -30,520 +190,926 @@ command TreeToggleRow @xDataSetA, pRow, pLevelsDown, pExpandedState
   end if
 
   # Make sure node is visible
-  put item pRow of xDataSetA["visible nodes"] into tElementKey
-  _ShowNode xDataSetA, tElementKey
+  _showNode tNodeIndexA
 
   # Toggle
-  _SetExpandedState xDataSetA, pRow, pExpandedState
+  _setNodeExpandedState tNodeIndexA, pExpandedState
 
   # Affect children
   if pLevelsDown is not 0 then
     put 0 into tCurrentLevel
-    _SetNodeAncestorExpandedState xDataSetA, tElementKey, xDataSetA["nodes"][tElementKey]["expanded"], \
+    _setNodeAncestorExpandedState tNodeIndexA, sTreeA[tNodeIndexA]["expanded"], \
           pLevelsDown, tCurrentLevel
   end if
 
-  lock screen
-
-  --   put the milliseconds into theStart
-
-  RenderView
-
-  --   put "time:" && the milliseconds - theStart
-
-  put TreeDescendantNodesOfRow(xDataSetA, pRow, true) into tChildNodes
-  if tChildNodes is not empty then
-    local tLastRow
-
-    put itemOffset(the last item of tChildNodes, xDataSetA["visible nodes"]) into tLastRow
-    ScrollRowIntoView tLastRow, "bottom"
-  end if
-
-  # Now make sure pRow is visible
-  ScrollRowIntoView pRow, "top" # scroll to top if not in view
-
-  # update selected rows
-  # rows may no longer be available because they are contracted
-  if tSelElementKeys is not empty then
-    repeat with i = the number of items of tSelElementKeys down to 1
-      put itemOffset(item i of tSelElementKeys, xDataSetA["visible nodes"]) into tItemNo
-      if tItemNo > 0 then
-        put tItemNo into item i of tSelElementKeys
-      else
-        delete item i of tSelElementKeys
-      end if
-    end repeat
-
-    # If there are no rows left to be selected then select row that was toggled
-    if tSelElementKeys is empty then put pRow into tSelElementKeys
-    set the dvHilitedRows of me to tSelElementKeys
-  end if
-
-  unlock screen
-
-  return itemOffset(tElementKey, xDataSetA["visible nodes"])
-end TreeToggleRow
-
-
-/**
-Summary: Sets the expanded state for a node.
-
-Parameters:
-@xDataSetA The data set containing the tree.
-pRow: The row to expand/contract.
-pBoolean: The value to assign to the expanded state. Leave empty to toggle.
-
-Returns: empty
-*/
-private command _SetExpandedState @xDataSetA, pRow, pBoolean
-  local theChildElementKeys, theChildElementKey, theElementKey, theItemCount
-
-  put item pRow of xDataSetA["visible nodes"] into theElementKey
-
-  if pBoolean is empty then put not xDataSetA["nodes"][theElementKey]["expanded"] into pBoolean
-  else put pBoolean is true into pBoolean
-
-  # Make sure it has a boolean value
-  if xDataSetA["nodes"][theElementKey]["expanded"] is empty then \
-        put false into xDataSetA["nodes"][theElementKey]["expanded"]
-
-  if xDataSetA["nodes"][theElementKey]["expanded"] is not pBoolean then
-    if not xDataSetA["nodes"][theElementKey]["is leaf"] then
-      if xDataSetA["nodes"][theElementKey]["children"] is not empty then
-        if not pBoolean then
-          put _NumberOfVisibleAncestors(xDataSetA, "nodes", theElementKey) into theItemCount
-          delete item (pRow + 1) to (pRow + theItemCount) of xDataSetA["visible nodes"]
-          put false into xDataSetA["nodes"][theElementKey]["expanded"]
-        else
-          put true into xDataSetA["nodes"][theElementKey]["expanded"]
-          put _DescendantElements(xDataSetA, "nodes", theElementKey, true) into theChildElementKeys
-
-          # make sure we don't add children to visible nodes twice
-          set the wholematches to true
-          local theRow
-          put pRow into theRow
-          repeat for each item theChildElementKey in theChildElementKeys
-            if theChildElementKey is not among the items of xDataSetA["visible nodes"] then
-              put "," & theChildElementKey after item theRow of xDataSetA["visible nodes"]
-              add 1 to theRow
-            end if
-          end repeat
-        end if
-      end if
-    end if
+  if pRefreshView then
+    lock screen
+    _refreshView
+    ScrollRowDescendantsIntoView pRow
+    unlock screen
   end if
 
   return empty
-end _SetExpandedState
+end SetRowIsExpanded
 
 
 /**
-Summary: Expands any tree nodes necessary so that the node can be seen. The selected row(s) will be maintained.
+Summary: Sets the expanded state of a node.
 
 Parameters:
-xDataSetA: The data set containing the tree.
-pElementKey: The key in the data set that should be shown.
+pNode: The node `id` or the node index array.
+pLevelsDown: How many levels to toggle. Empty or 0 only toggles pRow. -1 toggles all. Positive number affects that many levels down.
+pExpandedState: Pass in a true/false to force a setting.
+pRefreshView: Pass in `false` to keep the view from being refreshed.
 
-Returns: The new row number of the node
+Description:
+See `SetRowIsExpanded`.
+
+Returns: empty
 */
-command TreeShowNode @xDataSetA, pElementKey
-  local theSelElementKeys, theRow, i
+command SetNodeIsExpanded pNode, pLevelsDown, pExpandedState, pRefreshView
+  if pNode is not an array then put sNodeIdNodeLookupA[pNode] into pNode
+  SetRowIsExpanded _rowOfNode(pNode), pLevelsDown, pExpandedState, pRefreshView
+  return empty
+end SetNodeIsExpanded
 
-  # store selected elements
-  put the dvHilitedRows of me into theSelElementKeys
-  put item 1 of theSelElementKeys into theRow
-  repeat with i = 1 to the number of items of theSelElementKeys
-    put item (item i of theSelElementKeys) of xDataSetA["visible nodes"] into item i of theSelElementKeys
-  end repeat
 
-  _ShowNode xDataSetA, pElementKey
+/**
+Summary: Toggles the expanded state of a row.
 
-  lock screen
-  RenderView
+Parameters:
+pRow: The row to toggle.
+pLevelsDown: How many levels to toggle. Empty or 0 only toggles pRow. -1 toggles all. Positive number affects that many levels down.
+pRefreshView: Pass in false to keep the view from being refreshed.
 
-  # update selected rows
-  # rows may no longer be available because they are contracted
-  if theSelElementKeys is not empty then
-    local theItemNo
+Description:
+See `SetRowIsExpanded`.
 
-    set the wholematches to true
-    repeat with i = the number of items of theSelElementKeys down to 1
-      put itemOffset(item i of theSelElementKeys, xDataSetA["visible nodes"]) into theItemNo
-      if theItemNo > 0 then
-        put theItemNo into item i of theSelElementKeys
-      else
-        delete item i of theSelElementKeys
-      end if
-    end repeat
+Returns: Nothing
+*/
+command ToggleRowIsExpanded pRow, pLevelsDown, pRefreshView
+  local tNodeIndexA, tExpandedState
 
-    # If there are no rows left to be selected then select row that was toggled
-    if theSelElementKeys is empty then put itemOffset(pElementKey, xDataSetA["visible nodes"]) into theSelElementKeys
-    set the dvHilitedRows of me to theSelElementKeys
-  end if
+  put sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] into tNodeIndexA
+  put not sTreeA[tNodeIndexA]["expanded"] into tExpandedState
 
-  # Now make sure shown row is visible
-  ScrollRowIntoView itemOffset(pElementKey, xDataSetA["visible nodes"])
+  SetRowIsExpanded pRow, pLevelsDown, tExpandedState, pRefreshView
+  return the result
+end ToggleRowIsExpanded
 
-  unlock screen
 
-  set the wholematches to true
-  return itemOffset(pElementKey, xDataSetA["visible nodes"])
-end TreeShowNode
+/**
+Summary: Toggles the expanded state of a node.
+
+Parameters:
+pNode: The node `id` or the node index array.
+pLevelsDown: How many levels to toggle. Empty or 0 only toggles pRow. -1 toggles all. Positive number affects that many levels down.
+pRefreshView: Pass in false to keep the view from being refreshed.
+
+Description:
+See `SetRowIsExpanded`.
+
+Returns: empty
+*/
+command ToggleNodeIsExpanded pNode, pLevelsDown, pRefreshView
+  local tRow, tNodeIndexA, tExpandedState
+
+  if pNode is not an array then put sNodeIdNodeLookupA[pNode] into pNode
+  put _rowOfNode(pNode) into tRow
+
+  put sNodeIdNodeLookupA[sRowtoNodeIdLookupA[tRow]] into tNodeIndexA
+  put not sTreeA[tNodeIndexA]["expanded"] into tExpandedState
+
+  SetRowIsExpanded tRow, pLevelsDown, tExpandedState, pRefreshView
+  return empty
+end ToggleNodeIsExpanded
 
 
 /**
 Summary: Expands any tree nodes necessary so that the node can be seen.
 
 Parameters:
-xDataSetA: The data set containing the tree.
-pElementKey: The key in the data set that should be shown.
-
-Returns: empty
-*/
-private command _ShowNode @xDataSetA, pElementKey
-  local theParentKey, theKeys
-
-  # Build list from root parent down to pElementKey and then work through it.
-  # We need this in order to expand a row.
-  put xDataSetA["nodes"][pElementKey]["parent"] into theParentKey
-
-  repeat until theParentKey is empty
-    put theParentKey & "," after theKeys
-    put xDataSetA["nodes"][theParentKey]["parent"] into theParentKey
-  end repeat
-  delete the last char of theKeys
-
-  local theKey, theRowNo
-  set the wholematches to true
-
-  repeat with i = the number of items of theKeys down to 1
-    put item i of theKeys into theKey
-    if not xDataSetA["nodes"][theKey]["expanded"] then
-      put itemOffset(theKey, xDataSetA["visible nodes"]) into theRowNo
-      if theRowNo > 0 then
-        _SetExpandedState xDataSetA, theRowNo, true
-      end if
-    end if
-  end repeat
-
-  return empty
-end _ShowNode
-
-
-/**
-Summary: Returns the node keys of the ancestors of a row.
-
-Parameters:
-pDataSetA: The data set containing the tree.
-pRow: The row to get ancestor nodes for.
-
-Returns: List
-*/
-function TreeAncestorNodesOfRow pDataSetA, pRow
-  local theElementKey
-  put item pRow of pDataSetA["visible nodes"] into theElementKey
-  return _AncestorElements(pDataSetA, "nodes", theElementKey)
-end TreeAncestorNodesOfRow
-
-
-/**
-Summary: Returns the node keys of the ancestors of a node.
-
-Parameters:
-pDataSetA: The data set containing the tree.
-pNodeKey: The node key to get ancestor nodes for.
-
-Returns: List
-*/
-function TreeAncestorNodesOfNode pDataSetA, pNodeKey
-  return _AncestorElements(pDataSetA, "nodes", pNodeKey)
-end TreeAncestorNodesOfNode
-
-
-/**
-Summary: Returns the node keys of the descendants of a row.
-
-Parameters:
-pDataSetA: The data set containing the tree.
-pRow: The row to get ancestor nodes for.
-pOnlyVisible: Pass in true to only return the visible descendant elements of pElementKey. Default is false.
-
-Returns: List
-*/
-function TreeDescendantNodesOfRow pDataSetA, pRow, pOnlyVisible
-  local theElementKey
-  put item pRow of pDataSetA["visible nodes"] into theElementKey
-  return _DescendantElements(pDataSetA, "nodes", theElementKey, pOnlyVisible)
-end TreeDescendantNodesOfRow
-
-
-/**
-Summary: Returns the node keys of the descendants of a node.
-
-Parameters:
-pDataSetA: The data set containing the tree.
-pNodeKey: The node key to get ancestor nodes for.
-pOnlyVisible: Pass in true to only return the visible descendant elements of pElementKey. Default is false.
-*
-* \package Tree
-
-Returns: List
-*/
-function TreeDescendantNodesOfNode pDataSetA, pNodeKey, pOnlyVisible
-  return _DescendantElements(pDataSetA, "nodes", pNodeKey, pOnlyVisible)
-end TreeDescendantNodesOfNode
-
-
-/**
-Summary: Recursive helper command for expanding nodes.
-
-Parameters:
-@xDataSetA: The data set containing the tree.
-pElementKey: The key in the data set that should be expanded.
-pExpandedState: True or false.
-pLevelsDown: The number of levels down to expand. Leave empty to expand all children.
-@pCurrentLevel: The current level that is being expanded. When this matches pLevelsDown or the last child is expanded then recursion stops.
-
-Returns: empty
-*/
-command _SetNodeAncestorExpandedState @xDataSetA, pElementKey, pExpandedState, pLevelsDown, @pCurrentLevel
-  local theCurrentLevel, theChildrenKeys, theKey, theRowNo
-
-  put pExpandedState is true into pExpandedState
-
-  add 1 to theCurrentLevel
-  put pCurrentLevel into theCurrentLevel
-
-  put xDataSetA["nodes"][pElementKey]["children"] into theChildrenKeys
-
-  set the wholematches to true
-
-  repeat for each item theKey in theChildrenKeys
-    if xDataSetA["nodes"][theKey]["expanded"] is not pExpandedState then
-      put itemOffset(theKey, xDataSetA["visible nodes"]) into theRowNo
-      if theRowNo > 0 then
-        # Make call which deals with visible toggling
-        _SetExpandedState xDataSetA, theRowNo, pExpandedState
-      else
-        put pExpandedState into xDataSetA["nodes"][theKey]["expanded"]
-      end if
-    end if
-
-    if theCurrentLevel is not pLevelsDown then
-      _SetNodeAncestorExpandedState xDataSetA, theKey, pExpandedState, pLevelsDown, pCurrentLevel
-      put theCurrentLevel into pCurrentLevel # reset for next child in loop.
-    end if
-  end repeat
-
-  return empty
-end _SetNodeAncestorExpandedState
-
-
-/**
-Summary: Returns a list of nodes that are descendants of a node.
-
-Parameters:
-pDataSetA: The tree structure.
-pNodesKey: The name of the nodes key.
-pParentNodeId: The parent node id.
-pOnlyVisible: Only get the visible ancestor ids.
-
-Returns: List
-*/
-private function _DescendantElements pDataSetA, pNodesKey, pParentNodeId, pOnlyVisible
-  local theIds, theChildId, theChildIds
-
-  put pOnlyVisible is true into pOnlyVisible
-
-  if not pOnlyVisible OR (pOnlyVisible AND pDataSetA[pNodesKey][pParentNodeId]["expanded"]) then
-    repeat for each item theChildId in pDataSetA[pNodesKey][pParentNodeId]["children"]
-      put theChildId into item (the number of items of theIds + 1) of theIds
-
-      put _DescendantElements(pDataSetA, pNodesKey, theChildId, pOnlyVisible) into theChildIds
-      if theChildIds is not empty then
-        put theChildIds into item (the number of items of theIds + 1) of theIds
-      end if
-    end repeat
-  end if
-
-  return theIds
-end _DescendantElements
-
-
-/**
-Summary: Returns a list of nodes that are ancestors of a node.
-
-Parameters:
-pDataSetA:The tree structure.
-pNodesKey: The name of the nodes key.
-pChildNodeId: The child node id to get the ancestors for.
-
-Returns: List
-*/
-private function _AncestorElements pDataSetA, pNodesKey, pChildNodeId
-  local theIds, theAncestorIds
-
-  if pDataSetA[pNodesKey][pChildNodeId]["parent"] is not empty then
-    put pDataSetA[pNodesKey][pChildNodeId]["parent"] into theIds
-    put _AncestorElements(pDataSetA, pNodesKey, pDataSetA[pNodesKey][pChildNodeId]["parent"]) into theAncestorIds
-    if theAncestorIds is not empty then
-      put "," & theAncestorIds after theIds
-    end if
-  end if
-
-  return theIds
-end _AncestorElements
-
-
-/**
-Summary: Returns the number of visible ancestor nodes of a node.
-
-Parameters:
-pDataSetA: The tree structure.
-pNodesKey: The name of the nodes key.
-pParentNodeId: The parent node id.
-
-Returns: Integer
-*/
-private function _NumberOfVisibleAncestors pDataSetA, pNodesKey, pParentNodeId
-  local theItemCount, theChildId
-
-  if pDataSetA[pNodesKey][pParentNodeId]["expanded"] then
-    put the number of items of pDataSetA[pNodesKey][pParentNodeId]["children"] into theItemCount
-
-    repeat for each item theChildId in pDataSetA[pNodesKey][pParentNodeId]["children"]
-      add _NumberOfVisibleAncestors(pDataSetA, pNodesKey, theChildId) to theItemCount
-    end repeat
-  end if
-
-  return max(theItemCount, 0)
-end _NumberOfVisibleAncestors
-
-
-/**
-Summary: Locates an element in the tree (representation of a row). The element may or may not be a visible row.
-
-Parameters:
-pDataSetA: The data set to search.
-pKey: The name of the key to use to locate the row.
-pValue: The value to find.
+pNode: The node `id` or the node index array.
 
 Description:
-You can pass in multiple pairs of key/value parameters in order to match multiple keys.
+Call `RefreshView` to redraw the view.
 
-Alternatively you can pass in an array for `pKey`. The keys of the array are
-keys to search for and the value of each key is the value the key will match on.
+Returns: empty
+*/
+command ShowNode pNode
+  if pNode is not an array then put sNodeIdNodeLookupA[pNode] into pNode
+  _showNode pNode
+  return empty
+end ShowNode
 
-An array with `key`, `row` and `visible` keys will be returned.
-`key` is the key of the node found under the `nodes` key in `pDataSetA`.
-`key` will be empty if not found.
 
-Example
+/**
+Summary: Scrolls a row and it's descendants into view.
 
+Parameters:
+pRow: The target row.
+
+Description:
+When expanding a row it may be desirable to scroll the newly exposed children
+into view. This handler will scroll the descendants into view without pushing
+pRow off the top.
+
+Returns: nothing
+*/
+command ScrollRowDescendantsIntoView pRow
+  local tDescendantsA, tRect, tHeight
+
+  put the dvRectOfRow[pRow] of me into tRect
+  add item 4 of tRect - item 2 of tRect to tHeight
+
+  put _descendantElements(sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]], true) into tDescendantsA
+  if tDescendantsA is an array then
+    repeat with i = 1 to the number of elements of tDescendantsA
+      put the dvRectOfRow[ _rowOfNode(tDescendantsA[i]) ] of me into tRect
+      add item 4 of tRect - item 2 of tRect to tHeight
+    end repeat
+  end if
+
+  if tHeight > the viewProp["content window height"] of me then
+    # Descendants are too tall. Scroll anchor row to top.
+    ScrollRowIntoView pRow, "top"
+  else
+    # All descendants fit into view. Scroll last one to bottom.
+    local tLastRow
+    if tDescendantsA is an array then
+      put _rowOfNode(tDescendantsA[the number of elements of tDescendantsA]) into tLastRow
+    else
+      put pRow into tLastRow
+    end if
+    ScrollRowIntoView tLastRow, "bottom"
+  end if
+end ScrollRowDescendantsIntoView
+
+
+/**
+Summary: See ScrollRowDescendantsIntoView/
+
+Returns: nothing
+*/
+command ScrollNodeDescendantsIntoView pNode
+  if pNode is not an array then put sNodeIdNodeLookupA[pNode] into pNode
+  ScrollRowDescendantsIntoView _rowOfNode(pNode)
+end ScrollNodeDescendantsIntoView
+
+
+/**
+Summary: Finds a node by `id` and returns index array pointing to a node in the tree.
+
+Parameters:
+pNodeId: The `id` of the node.
+
+Description:
+The index array that is returned by this function can be used in other DataView Tree
+handlers. Index array can be used by the LiveCode engine to find nested keys in a
+LiveCode array.
+
+An index array is a numerically indexed array that represents the keys pointing
+to a specific key in a nested array. For a key that is not nested the index array
+would have a single key. For a key that is nested three levels deep the index
+array would have three keys.
+
+Example:
+
+Assume the following array:
+
+```
+tPersonA["name"]
+tPersonA["children"]
+tPersonA["children"][1]["name"]
+tPersonA["children"][2]["name"]
+tPersonA["children"][3]["name"]
+```
+
+The index array for the third child would be as follows:
+
+```
+put "children" into tIndexA[1]
+put 3 into tIndexA[2]
+```
+
+To get the name of the third child you would use the following syntax:
+
+```
+put tPersonA[tIndexA]["name"] into tChildName
+```
+
+Returns: Index array
+*/
+getProp dvtNodeOfId[pNodeId]
+  return sNodeIdNodeLookupA[pNodeId]
+end dvtNodeOfId
+
+
+/**
+Summary: Returns the row assigned to a node.
+
+Parameters:
+pNodeId: The node id to search for.
+
+Description:
+The row may be empty if it isn't currently visible or caching is not turned on.
+
+Returns: Integer or empty if not found
+*/
+getProp dvtRowOfId[pNodeId]
+  return _rowOfNodeId(pNodeId)
+end dvtRowOfId
+
+
+/**
+Summary: Returns the node index array of the node associated with a row.
 
 Returns: Array
 */
-function TreeFindNode pDataSetA, pKey, pValue
-  local i, foundAMatch, theElementKey, theFilterA
-
-  ## Create a lookup array
-  if pKey is not an array then
-    repeat with i = 2 to the paramCount
-      put param(i+1) into theFilterA[param(i)]
-      add 1 to i
-    end repeat
-  else
-    put pKey into theFilterA
-  end if
-
-  # Find match
-  repeat with i = 1 to the number of elements of pDataSetA[tNodesKey]
-    put true into foundAMatch
-
-    repeat for each key theKey in theFilterA
-      if pDataSetA["nodes"][i][theKey] is not theFilterA[theKey] then
-        put false into foundAMatch
-        next repeat
-      end if
-    end repeat
-
-    if foundAMatch then
-      put i into theElementKey
-      exit repeat
-    end if
-  end repeat
-
-  # Fill in return value
-  local theA
-  put theElementKey into theA["key"]
-  put true into theA["visible"]
-  put empty into theA["row"]
-
-  if theElementKey is not empty then
-    set the wholematches to true
-    put itemoffset(theElementKey, pDataSetA["visible nodes"]) into theA["row"]
-    put theA["row"] > 0 into theA["visible"]
-  end if
-
-  return theA
-end TreeFindNode
+getProp dvtRowNode[pRow]
+  return sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]]
+end dvtRowNode
 
 
 /**
-Summary: Returns the order of a row in relation to its immediate siblings.
+Summary: Returns the `id` of the row's node.
 
 Parameters:
-pDataSetA: A reference to the view data set.
-pRow: The row to focus on. Must be visible.
+pRow: The target row
 
-Returns: Row number. Empty if no parent.
+Returns: Mixed
 */
-function TreeRowPositionRelativeToParent pDataSetA, pRow
-  local theId, theParentId, thePosition
+getProp dvtRowId[pRow]
+  return sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["id"]
+end dvtRowId
 
-  set the wholeMatches to true
 
-  # Find position relative to parent.
-  put item pRow of pDataSetA["visible nodes"] into theId
-  put pDataSetA["nodes"][theId]["parent"] into theParentId
+/**
+Summary: Returns the `type` of the row's node.
 
-  if theParentId is not empty then
-    return itemOffset(theId, pDataSetA["nodes"][theParentId]["children"])
+Parameters:
+pRow: The target row
+
+Returns: Mixed
+*/
+getProp dvtRowType[pRow]
+  return sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["type"]
+end dvtRowType
+
+
+/**
+Summary: Returns the `type` of the node.
+
+Parameters:
+pNode: The target node id
+
+Returns: Mixed
+*/
+getProp dvtNodeType[pNode]
+  put sNodeIdNodeLookupA[pNode] into pNode
+  return sTreeA[pNode]["type"]
+end dvtNodeType
+
+
+/**
+Summary: Returns the `expanded` property of the row's node.
+
+Parameters:
+pRow: The target row
+
+Returns: Boolean
+*/
+getProp dvtRowIsExpanded[pRow]
+  return sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["expanded"]
+end dvtRowIsExpanded
+
+
+/**
+Summary: Returns the `expanded` property of the node.
+
+Parameters:
+pNode: The target node id.
+
+Returns: Boolean
+*/
+getProp dvtNodeIsExpanded[pNode]
+  put sNodeIdNodeLookupA[pNode] into pNode
+  return sTreeA[pNode]["expanded"]
+end dvtNodeIsExpanded
+
+
+/**
+Summary: Returns the `is leaf` property of the row's node.
+
+Parameters:
+pRow: The target row
+
+Returns: Boolean
+*/
+getProp dvtRowIsLeaf[pRow]
+  return sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["is leaf"]
+end dvtRowIsLeaf
+
+
+/**
+Summary: Returns the `is leaf` property of the node.
+
+Parameters:
+pNode: The target node id.
+
+Returns: Boolean
+*/
+getProp dvtNodeIsLeaf[pNode]
+  put sNodeIdNodeLookupA[pNode] into pNode
+  return sTreeA[pNode]["is leaf"]
+end dvtNodeIsLeaf
+
+
+/**
+Summary: Returns the number of children that a row has.
+
+Returns: Integer
+*/
+getProp dvtRowChildCount[pRow]
+  if not sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["is leaf"] then
+    return the number of elements of sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["children"]
   else
-    local theRow
-
-    ## At root level
-    repeat for each item theId in pDataSetA["visible nodes"]
-      add 1 to theRow
-      if pDataSetA["nodes"][theId]["parent"] is empty then
-        add 1 to thePosition
-      end if
-      if theRow is pRow then
-        return thePosition
-      end if
-    end repeat
+    return 0
   end if
+end dvtRowChildCount
 
-  return empty
-end TreeRowPositionRelativeToParent
+
+/**
+Summary: Returns the number of children that a node has.
+
+Returns: Integer
+*/
+getProp dvtNodeChildCount[pNode]
+  put sNodeIdNodeLookupA[pNode] into pNode
+  if not sTreeA[pNode]["is leaf"] then
+    return the number of elements of sTreeA[pNode]["children"]
+  else
+    return 0
+  end if
+end dvtNodeChildCount
+
+
+/**
+Summary: Returns the row numbers of a row's children.
+
+Returns: List
+*/
+getProp dvtRowChildRows[pRow]
+  local tList
+  repeat with i = pRow + 1 to pRow + the number of elements of sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["children"]
+    put i & "," after tList
+  end repeat
+  delete the last char of tList
+  return tList
+end dvtRowChildRows
+
+
+/**
+Summary: Returns the node index arrays for children of a node.
+
+Returns: Numerically indexed array.
+*/
+getProp dvtNodeChildNodes[pNode]
+  put sNodeIdNodeLookupA[pNode] into pNode
+  return sTreeA[pNode]["children"]
+end dvtNodeChildNodes
+
+
+/**
+Summary: Returns an integer representing the position of `pRow` amongst it's siblings.
+
+Parameters:
+pRow: The target row.
+
+Description:
+If pRow is the third child of it's parent then this property would return `3`.
+
+Returns: Integer
+*/
+getProp dvtRowPositionAmongSiblings[pRow]
+  local tNodeIndexA
+
+  # The numerically index is sibling position.
+  put sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] into tNodeIndexA
+  return tNodeIndexA[the number of elements of tNodeIndexA]
+end dvtRowPositionAmongSiblings
+
+
+/**
+Summary: Returns the tree level of a node.
+
+Parameters:
+pNode: The node `id`.
+
+Returns: Integer
+*/
+getProp dvtNodeLevel[pNode]
+  put sNodeIdNodeLookupA[pNode] into pNode
+  return _nodeLevel(pNode)
+end dvtNodeLevel
 
 
 /**
 Summary: Returns the tree level of a row.
 
 Parameters:
-pDataSetA: A reference to the view data set.
-pElementKey: The key of the element to determine the level of.
+pRow: The row number.
 
 Returns: Integer
 */
-function TreeLevelOfNode pDataSetA, pElementKey
-  local theLevel = "1"
+getProp dvtRowLevel[pRow]
+  return _nodeLevel( sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] )
+end dvtRowLevel
 
-  repeat until pDataSetA["nodes"][pElementKey]["parent"] is empty
-    add 1 to theLevel
-    put pDataSetA["nodes"][pElementKey]["parent"] into pElementKey
+
+/**
+Summary: Returns the row number of a rows parent.
+
+Parameters:
+pRow: The target row number.
+
+Description:
+If the row does not have a parent then 0 is returned.
+
+Returns: Integer
+*/
+getProp dvtRowParentRow[pRow]
+  local pNodeIndexA
+  put _parentNodeIndex( sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ) into pNodeIndexA
+  if pNodeIndexA is an array then
+    return _rowOfNode(pNodeIndexA)
+  else
+    return 0
+  end if
+end dvtRowParentRow
+
+
+/**
+Summary: Returns a node's parent node id.
+
+Parameters:
+pNode: The node `id`.
+
+Description:
+If the node does not have a parent then empty is returned.
+
+Returns: Integer
+*/
+getProp dvtNodeParentNode[pNode]
+  local tNodeIndexA
+  put sNodeIdNodeLookupA[pNode] into pNode
+  put _parentNodeIndex(pNode) into tNodeIndexA
+
+  if tNodeIndexA is an array then
+    return sTreeA[tNodeIndexA]["id"]
+  else
+    return empty
+  end if
+end dvtNodeParentNode
+
+
+/**
+Summary: Returns index arrays pointing to ancestors of a row.
+
+Parameters:
+pRow: The row to get ancestor nodes for.
+
+Returns: Numerically indexed array of index arrays
+*/
+getProp dvtRowAncestorNodes[pRow]
+  return _ancestorElements( sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] )
+end dvtRowAncestorNodes
+
+
+/**
+Summary: Returns index arrays pointing to ancestors of a node.
+
+Parameters:
+pNode: The node `id`.
+
+Returns: Numerically indexed array of index arrays
+*/
+getProp dvtNodeAncestorNodes[pNode]
+  put sNodeIdNodeLookupA[pNode] into pNode
+  return _ancestorElements(pNode)
+end dvtNodeAncestorNodes
+
+
+/**
+Summary: Returns the node keys of the descendants of a row.
+
+Parameters:
+pRow: The row to get ancestor nodes for.
+
+Returns: Numerically indexed array of index arrays
+*/
+getProp dvtRowDescendantNodes[pRow]
+  return _descendantElements(sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]], false)
+end dvtRowDescendantNodes
+
+
+/**
+Summary: Returns index arrays that point to the descendants of a node.
+
+Parameters:
+pNode: The node `id`.
+pOnlyVisible: Pass in true to only return the visible descendant elements. Default is `false`.
+
+Returns: Numerically indexed array of index arrays
+*/
+getProp dvtNodeDescendantNodes[pNode]
+  if pNode is not an array then put sNodeIdNodeLookupA[pNode] into pNode
+  return _descendantElements(pNode, false)
+end dvtNodeDescendantNodes
+
+
+/**
+Summary: Builds the lookup table used to match nodes to rows.
+
+Returns: nothing
+*/
+private command _buildRowToNodeLookup
+  local tIndex
+
+  put 0 into tIndex
+  put empty into sRowtoNodeIdLookupA
+  put empty into sNodeIdNodeLookupA
+
+  _addBranchToRowToNodeLookup sTreeA, empty, tIndex
+
+  return empty
+end _buildRowToNodeLookup
+
+
+/**
+Summary: Adds a branch of sTreeA to the lookup table.
+
+Returns: nothing
+*/
+private command _addBranchToRowToNodeLookup pTreeBranchA, pIndexA, @xRow
+  local tLookupIndex, tIndex, tNodeA
+
+  put the number of elements of pIndexA + 1 into tLookupIndex
+
+  repeat for each element tNodeA in pTreeBranchA
+    add 1 to tIndex
+    add 1 to xRow
+
+    put tIndex into pIndexA[tLookupIndex]
+
+    put pIndexA into sNodeIdNodeLookupA[tNodeA["id"]]
+    put tNodeA["id"] into sRowtoNodeIdLookupA[xRow]
+
+    if tNodeA["expanded"] is empty then put false into tNodeA["expanded"]
+
+    if tNodeA["expanded"] and tNodeA["children"] is not empty then
+      put "children" into pIndexA[tLookupIndex+1]
+      _addBranchToRowToNodeLookup tNodeA["children"], pIndexA, xRow
+      delete local pIndexA[tLookupIndex+1]
+    end if
   end repeat
 
-  return theLevel
-end TreeLevelOfNode
+  return empty
+end _addBranchToRowToNodeLookup
+
+
+private command _refreshView pTargetRow
+  local i, tSelNodesA
+
+  # store selected elements
+  repeat for each item tRow in the dvHilitedRows of me
+    add 1 to i
+    put sNodeIdNodeLookupA[sRowtoNodeIdLookupA[tRow]] into tSelNodesA[i]
+  end repeat
+
+  lock screen
+  RenderView
+
+  # update selected rows
+  # rows may no longer be available because they are contracted
+  if tSelNodesA is an array then
+    local tSelRows
+
+    repeat with i = 1 to the number of elements of tSelNodesA
+      put _rowOfNode(tSelNodesA[i]) into tRow
+      if tRow > 0 then
+        put tRow & "," after tSelRows
+      end if
+    end repeat
+    delete the last char of tSelRows
+
+    if tSelRows is empty then put pTargetRow into tSelRows
+    set the dvHilitedRows of me to tSelRows
+  end if
+
+  unlock screen
+end _refreshView
+
+
+/**
+Summary: Recursively sets the `expanded` key of all nodes in the tree.
+
+Parameters:
+pTreeBranchA: The array representing a branch in the tree.
+pIndexA: The index array that points to the branch of the tree.
+pBoolean: `true` or `false`.
+
+Returns: nothing
+*/
+private command _setExpandedInTreeBranch pTreeBranchA, pIndexA, pBoolean
+  local tIndex, i
+
+  put the number of elements of pIndexA into tIndex
+  add 1 to tIndex
+
+  repeat with i = 1 to the number of elements of pTreeBranchA
+    put i into pIndexA[tIndex]
+
+    if sTreeA[pIndexA]["is leaf"] then next repeat
+
+    put pBoolean into sTreeA[pIndexA]["expanded"]
+
+    if sTreeA[pIndexA]["children"] is not empty then
+      put "children" into pIndexA[tIndex+1]
+      _setExpandedInTreeBranch sTreeA[pIndexA]["children"], pIndexA, pBoolean
+      delete variable pIndexA[tIndex+1]
+    end if
+  end repeat
+end _setExpandedInTreeBranch
+
+
+/**
+Summary: Returns the row associated with a node.
+
+Parameters:
+pNodeIndexA: Node index array.
+
+Description:
+This will return 0 if no row is found.
+
+Returns: Integer
+*/
+private function _rowOfNode pNodeIndexA
+  local i
+
+  repeat with i = 1 to the number of elements of sRowtoNodeIdLookupA
+    if sNodeIdNodeLookupA[sRowtoNodeIdLookupA[i]] is pNodeIndexA then
+      return i
+    end if
+  end repeat
+  return 0
+end _rowOfNode
+
+
+/**
+Summary: Returns the row number associated with a node id.
+
+Parameters:
+pNodeId: The node `id`.
+
+Description:
+This will return 0 if no row is found.
+
+Returns: Integer
+*/
+private function _rowOfNodeId pNodeId
+  local i
+
+  repeat with i = 1 to the number of elements of sRowtoNodeIdLookupA
+    if sRowtoNodeIdLookupA[i] is pNodeId then
+      return i
+    end if
+  end repeat
+  return 0
+end _rowOfNodeId
+
+
+/**
+Summary: Returns the level of a node in the tree.
+
+Returns: Integer
+*/
+private function _nodeLevel pNodeIndexA
+  local tLevel, tKey
+
+  repeat for each key tKey in pNodeIndexA
+    if pNodeIndexA[tKey] is an integer then
+      add 1 to tLevel
+    end if
+  end repeat
+
+  return tLevel
+end _nodeLevel
+
+
+private function _findNodeOfId pTreeBranchA, pIndexA, pNodeId
+  local tIndex, tFoundIndexA, tNodeA, i
+
+  if sNodeIdNodeLookupA[pNodeId] is an array then
+    return sNodeIdNodeLookupA[pNodeId]
+  else
+    put the number of elements of pIndexA + 1 into tIndex
+
+    repeat for each element tNodeA in pTreeBranchA
+      add 1 to i
+      put i into pIndexA[tIndex]
+
+      if tNodeA["id"] is pNodeId then
+        put pIndexA into sNodeIdNodeLookupA[pNodeId]
+        return pIndexA
+      end if
+
+      if tNodeA["expanded"] and tNodeA["children"] is not empty then
+        put "children" into pIndexA[tIndex+1]
+        put _findNodeOfId(tNodeA["children"], pIndexA, pNodeId) into tFoundIndexA
+        delete local pIndexA[tIndex+1]
+
+        if tFoundIndexA is an array then
+          put tFoundIndexA into sNodeIdNodeLookupA[pNodeId]
+          return tFoundIndexA
+        end if
+      end if
+    end repeat
+  end if
+
+  return empty
+end _findNodeOfId
+
+
+/**
+Summary: Sets the expanded state for a node.
+
+Parameters:
+pNodeIndexA: The node index array.
+pBoolean: The value to assign to the expanded state. Leave empty to toggle.
+
+Returns: empty
+*/
+private command _setNodeExpandedState pNodeIndexA, pBoolean
+  if pBoolean is empty then
+    put not sTreeA[pNodeIndexA]["expanded"] into pBoolean
+  else
+    put pBoolean is true into pBoolean
+  end if
+
+  if sTreeA[pNodeIndexA]["expanded"] is not pBoolean then
+    if sTreeA[pNodeIndexA]["is leaf"] is not true then
+      put pBoolean into sTreeA[pNodeIndexA]["expanded"]
+      put true into sRebuildLookupTable
+    end if
+  end if
+
+  return empty
+end _setNodeExpandedState
+
+
+/**
+Summary: Expands any tree nodes necessary so that the node can be seen.
+
+Parameters:
+pNodeIndexA: The node index array.
+
+Returns: empty
+*/
+private command _showNode pNodeIndexA
+  repeat while pNodeIndexA is an array
+    if not sTreeA[pNodeIndexA]["is leaf"] and not sTreeA[pNodeIndexA]["expanded"] then
+      _setNodeExpandedState pNodeIndexA, true
+    end if
+    put _parentNodeIndex(pNodeIndexA) into pNodeIndexA
+  end repeat
+
+  return empty
+end _showNode
+
+
+/**
+Summary: Recursive helper command for expanding nodes.
+
+Parameters:
+pNodeIndexA: The node index array.
+pExpandedState: True or false.
+pLevelsDown: The number of levels down to expand. Leave empty to expand all children.
+@rCurrentLevel: The current level that is being expanded. When this matches pLevelsDown or the last child is expanded then recursion stops.
+
+Returns: empty
+*/
+command _setNodeAncestorExpandedState pNodeIndexA, pExpandedState, pLevelsDown, @xCurrentLevel
+  local tCurrentLevel
+
+  put pExpandedState is true into pExpandedState
+
+  add 1 to tCurrentLevel
+  put xCurrentLevel into tCurrentLevel
+
+  local tIndex
+  put the number of elements of pNodeIndexA + 1 into tIndex
+  put "children" into pNodeIndexA[tIndex]
+  add 1 to tIndex
+
+  repeat with i = 1 to the number of elements of sTreeA[pNodeIndexA]["children"]
+    put i into pNodeIndexA[tIndex]
+    if sTreeA[pNodeIndexA]["expanded"] is not pExpandedState then
+      _setNodeExpandedState pNodeIndexA, pExpandedState
+    end if
+
+    if tCurrentLevel is not pLevelsDown then
+      _setNodeAncestorExpandedState pNodeIndexA, pExpandedState, pLevelsDown, xCurrentLevel
+      put tCurrentLevel into xCurrentLevel # reset for next child in loop.
+    end if
+  end repeat
+
+  return empty
+end _setNodeAncestorExpandedState
+
+
+/**
+Summary: Returns index arrays pointing to the descendants of a node.
+
+Parameters:
+pNodeIndexA: The node index array.
+pOnlyVisible: Only get the visible ancestor ids.
+
+Returns: Numerically indexed array of index arrays
+*/
+private function _descendantElements pNodeIndexA, pOnlyVisible
+  local tDescendantsA, tIndex, tChildIndexA
+  local tDescIndex
+
+  put pOnlyVisible is true into pOnlyVisible
+
+  if not pOnlyVisible OR \
+        (pOnlyVisible AND sTreeA[pNodeIndexA]["expanded"]) then
+
+    local tTempDescendantsA
+
+    put pNodeIndexA into tChildIndexA
+    put the number of elements of tChildIndexA + 1 into tIndex
+    put "children" into tChildIndexA[tIndex]
+    add 1 to tIndex
+
+    repeat with i = 1 to the number of elements of sTreeA[pNodeIndexA]["children"]
+      put i into tChildIndexA[tIndex]
+      add 1 to tDescIndex
+      put tChildIndexA into tDescendantsA[tDescIndex]
+
+      put _descendantElements(tChildIndexA, pOnlyVisible) into tTempDescendantsA
+
+      repeat with j = 1 to the number of elements of tTempDescendantsA
+        add 1 to tDescIndex
+        put tTempDescendantsA[j] into tDescendantsA[tDescIndex]
+      end repeat
+    end repeat
+  end if
+
+  return tDescendantsA
+end _descendantElements
+
+
+/**
+Summary: Returns the index array for the parent of an index array that points to a node.
+*/
+private function _parentNodeIndex pNodeIndexA
+  local tCount
+
+  put the number of elements of pNodeIndexA into tCount
+  if pNodeIndexA[tCount - 1] is "children" then
+    delete variable pNodeIndexA[tCount]
+    delete variable pNodeIndexA[tCount-1]
+    return pNodeIndexA
+  else
+    return empty
+  end if
+end _parentNodeIndex
+
+
+/**
+Summary: Returns index arrays pointing to ancestors of a node.
+
+Parameters:
+pNodeIndexA: The node index array.
+
+Returns: Numerically indexed array of index arrays
+*/
+private function _ancestorElements pNodeIndexA
+  local tAncestorsA, tIndexCount, i
+
+  put the number of elements of pNodeIndexA into tIndexCount
+
+  repeat forever
+    if pNodeIndexA[tIndexCount-1] is "children" then
+      delete variable pNodeIndexA[tIndexCount]
+      delete variable pNodeIndexA[tIndexCount]
+
+      add 1 to i
+      put pNodeIndexA into tAncestorsA[i]
+    end if
+  end repeat
+
+  return tAncestorsA
+end _ancestorElements
