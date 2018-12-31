@@ -466,9 +466,9 @@ pNode: The target node id
 
 Returns: Mixed
 */
-getProp dvtNodeType[pNode]
-  put sNodeIdNodeLookupA[pNode] into pNode
-  return sTreeA[pNode]["type"]
+getProp dvtNodeType[pNodeId]
+  put sNodeIdNodeLookupA[pNodeId] into pNodeId
+  return sTreeA[pNodeId]["type"]
 end dvtNodeType
 
 
@@ -493,9 +493,9 @@ pNode: The target node id.
 
 Returns: Boolean
 */
-getProp dvtNodeIsExpanded[pNode]
-  put sNodeIdNodeLookupA[pNode] into pNode
-  return sTreeA[pNode]["expanded"]
+getProp dvtNodeIsExpanded[pNodeId]
+  put sNodeIdNodeLookupA[pNodeId] into pNodeId
+  return sTreeA[pNodeId]["expanded"]
 end dvtNodeIsExpanded
 
 
@@ -520,9 +520,9 @@ pNode: The target node id.
 
 Returns: Boolean
 */
-getProp dvtNodeIsLeaf[pNode]
-  put sNodeIdNodeLookupA[pNode] into pNode
-  return sTreeA[pNode]["is leaf"]
+getProp dvtNodeIsLeaf[pNodeId]
+  put sNodeIdNodeLookupA[pNodeId] into pNodeId
+  return sTreeA[pNodeId]["is leaf"]
 end dvtNodeIsLeaf
 
 
@@ -545,10 +545,10 @@ Summary: Returns the number of children that a node has.
 
 Returns: Integer
 */
-getProp dvtNodeChildCount[pNode]
-  put sNodeIdNodeLookupA[pNode] into pNode
-  if not sTreeA[pNode]["is leaf"] then
-    return the number of elements of sTreeA[pNode]["children"]
+getProp dvtNodeChildCount[pNodeId]
+  put sNodeIdNodeLookupA[pNodeId] into pNodeId
+  if not sTreeA[pNodeId]["is leaf"] then
+    return the number of elements of sTreeA[pNodeId]["children"]
   else
     return 0
   end if
@@ -575,9 +575,9 @@ Summary: Returns the node index arrays for children of a node.
 
 Returns: Numerically indexed array.
 */
-getProp dvtNodeChildNodes[pNode]
-  put sNodeIdNodeLookupA[pNode] into pNode
-  return sTreeA[pNode]["children"]
+getProp dvtNodeChildNodes[pNodeId]
+  put sNodeIdNodeLookupA[pNodeId] into pNodeId
+  return sTreeA[pNodeId]["children"]
 end dvtNodeChildNodes
 
 
@@ -609,9 +609,9 @@ pNode: The node `id`.
 
 Returns: Integer
 */
-getProp dvtNodeLevel[pNode]
-  put sNodeIdNodeLookupA[pNode] into pNode
-  return _nodeLevel(pNode)
+getProp dvtNodeLevel[pNodeId]
+  put sNodeIdNodeLookupA[pNodeId] into pNodeId
+  return _nodeLevel(pNodeId)
 end dvtNodeLevel
 
 
@@ -661,10 +661,10 @@ If the node does not have a parent then empty is returned.
 
 Returns: Integer
 */
-getProp dvtNodeParentNode[pNode]
+getProp dvtNodeParentNode[pNodeId]
   local tNodeIndexA
-  put sNodeIdNodeLookupA[pNode] into pNode
-  put _parentNodeIndex(pNode) into tNodeIndexA
+  put sNodeIdNodeLookupA[pNodeId] into pNodeId
+  put _parentNodeIndex(pNodeId) into tNodeIndexA
 
   if tNodeIndexA is an array then
     return sTreeA[tNodeIndexA]["id"]
@@ -695,9 +695,9 @@ pNode: The node `id`.
 
 Returns: Numerically indexed array of index arrays
 */
-getProp dvtNodeAncestorNodes[pNode]
-  put sNodeIdNodeLookupA[pNode] into pNode
-  return _ancestorElements(pNode)
+getProp dvtNodeAncestorNodes[pNodeId]
+  put sNodeIdNodeLookupA[pNodeId] into pNodeId
+  return _ancestorElements(pNodeId)
 end dvtNodeAncestorNodes
 
 
@@ -723,9 +723,9 @@ pOnlyVisible: Pass in true to only return the visible descendant elements. Defau
 
 Returns: Numerically indexed array of index arrays
 */
-getProp dvtNodeDescendantNodes[pNode]
-  if pNode is not an array then put sNodeIdNodeLookupA[pNode] into pNode
-  return _descendantElements(pNode, false)
+getProp dvtNodeDescendantNodes[pNodeId]
+  put sNodeIdNodeLookupA[pNodeId] into pNodeId
+  return _descendantElements(pNodeId, false)
 end dvtNodeDescendantNodes
 
 
