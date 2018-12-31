@@ -171,7 +171,8 @@ pRefreshView: Pass in false to keep the view from being refreshed.
 Description:
 By default the DataView will be redrawn after calling this handler and the newly displayed
 children nodes will be scrolled into view. If you pass in `false` for `pRefreshView`
-then call `RefreshView` to redraw the view.
+then call `RefreshView` to redraw the view and `ScrollRowDescendantsIntoView` to scroll
+the newly displayed rows into view.
 
 Returns: Nothing
 */
@@ -358,7 +359,7 @@ end ScrollNodeDescendantsIntoView
 
 
 /**
-Summary: Finds a node by `id` and returns index array pointing to a node in the tree.
+Summary: Finds a node by `id` and returns the index array pointing to a node in the tree.
 
 Parameters:
 pNodeId: The `id` of the node.
@@ -372,8 +373,6 @@ An index array is a numerically indexed array that represents the keys pointing
 to a specific key in a nested array. For a key that is not nested the index array
 would have a single key. For a key that is nested three levels deep the index
 array would have three keys.
-
-Example:
 
 Assume the following array:
 
