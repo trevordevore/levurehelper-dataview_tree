@@ -1,88 +1,88 @@
 # DataView Tree Helper
 
-The DataView Tree helper adds support for working with tree data structures to a DataView. This is done by adding a new behavior to the DataView that is a parent behavior of the standard DataView behavior. The new behavior adds commands for toggling the expanded state of nodes in a tree, expanding any nodes in the tree necessary to show a specific node, determining node ancestry, and descendants, finding nodes, determining the level of a node, and determining relative row position of a child to a parent.
+The DataView Tree helper adds support for working with tree data structures to a DataView. This is done by adding a new behavior to the DataView that is a parent behavior of the standard DataView behavior. The new behavior adds an API for setting a tree structure containing nodes, accessing properties of the nodes and associated rows, toggling the expanded state of nodes.
 
-The helper does not provide support for creating UI elements such as a toggle. It only provides handlers that your UI elements can call.
+The helper does not provide support for creating UI elements such as an expand/contract widget. It only provides an API that your UI elements can call.
 
 In order to use the DataView Tree helper you must do two things:
 
 1. Assign the behavior of your DataView control to `stack "DataView Tree Behavior"`. If you are already using a custom behavior with your DataView then assign the behavior of your custom behavior to `stack "DataView Tree Behavior"`.
-2. Use an array for the data source with specific keys. The behavior script will need to modify the array in order to manipulate the tree.
+2. Create an array in the specified format and assign it to the `dvtTree` property of the DataView.
+3. Create one or more templates to display types of nodes in the tree.
+4. Implement the `DataForNode` message in order to feed the tree data as needed.
 
-## The data source array
+## The tree array
 
-When working with a tree you need to use an array with specific keys. At the root of the array are two keys:
+The DataView Tree uses an array that represents a tree. This array has the last amount of data needed in order for the DataView Tree to work. The actual data that is displayed in the UI will be provided by some other data source. This data is supplied to the DataView Tree by way of the `DataForNode` message.
 
-1. `nodes`: the value is an array of key=>value pairs. The `value` contains the an array of data for the node. This data will be displayed in the row that the node is rendered into. The `key` uniquely identifies the node within the tree.
-2. `visible nodes`: the value is a comma-delimited list of keys from the `nodes` array that are currently visible in the tree. The nodes will be displayed in the order they appear in the list.
+The array assigned to the `dvtTree` property is a numerically indexed array of node arrays (arrays nested within an array). Each node array has the following keys:
 
-In order to establish hierarchy each row in the `nodes` key of the data source has the following keys:
+1. `id`: Uniquely identifies the node in the tree. This also links the node to a record in your data source.
+2. `type`: Identifies the type of the node. This property can help you choose which row template to use for a given node.
+3. `expanded`: Boolean value specifying whether or not the node is expanded. Default is `false`.
+4. `children`: A numerically indexed array of child nodes.
+5. `is leaf`: Boolean value specifying whether or not the node can have children. If `true` then the node cannot have children.
 
-1. `children`: A comma-delimted list of the unique ids of child nodes.
-2. `parent`: The unique id of the parent node.
-3. `expanded`: Boolean value specifying whether or not the node is expanded. Default is `true`.
-4. `is leaf`: Boolean value specifying whether or not the node can have children. If `true` then the node cannot have children.
-
-### Sample data source array
-
-```
-local tDataA
-
-# Create a parent with a single child
-put "Parent 1" into tDataA["nodes"][1000]["title"]
-put 1002 into tDataA["nodes"][1000]["children"]
-put true into tDataA["nodes"][1000]["expanded"]
-
-put "Child 1 of Parent 1" into tDataA["nodes"][1002]["title"]
-put 1000 into tDataA["nodes"][1002]["parent"]
-put true into tDataA["nodes"][1002]["is leaf"]
-
-# Create another parent with a single child. The child is not expanded.
-put "Parent 2" into tDataA["nodes"][1001]["title"]
-put 1003 into tDataA["nodes"][1001]["children"]
-put false into tDataA["nodes"][1000]["expanded"]
-
-put "Child 1 of Parent 2" into tDataA["nodes"][1003]["title"]
-put 1001 into tDataA["nodes"][1003]["parent"]
-put true into tDataA["nodes"][1002]["is leaf"]
-
-# Specify which ids are displayed in the tree. Since "Parent 2" is 
-# not expanded "Child 1 of Parent 2"'s id is not included in the list.
-put "1000,1001,1002" into tDataA["visible nodes"]
-```
-
-## Feeding data to a DataView
-
-When feeding a data source array to the DataView using `DataForRow`, `NumberOfRows()`, and `cacheKeyForRow()` you will use the `visible object keys` to determine the number of rows and the data to provide for a given row.
-
-Here is an example that assumes a script local variable named `sDataA` has already been created and that `sDataA["nodes"]` keys are unique ids.
+### Sample of keys in a tree array
 
 ```
-command DataForRow pRow, @rDataA, @pTemplateStyle
-  put item pRow of sDataA["visible object keys"] into tId
-  put sDataA["nodes"][tId] into rDataA
-
-  put "default" into pTemplateStyle
-end DataForRow
-
-function NumberOfRows
-  return the number of items of sDataA["visible object keys"]
-end NumberOfRows
-
-function CacheKeyForRow pRow
-  return item pRow of sDataA["visible object keys"]
-end CacheKeyForRow
+pTreeA[1]["type"]
+pTreeA[1]["id"]
+pTreeA[1]["expanded"]
+pTreeA[1]["is leaf"]
+pTreeA[1]["children"]
+pTreeA[1]["children"][1]["type"]
+pTreeA[1]["children"][1]["id"]
+pTreeA[1]["children"][1]["expanded"]
+pTreeA[1]["children"][1]["is leaf"]
+pTreeA[1]["children"][1]["children"]
+pTreeA[1]["children"][1]["children"][1]["type"]
+pTreeA[1]["children"][1]["children"][1]["id"]
+pTreeA[1]["children"][1]["children"][1]["expanded"]
+pTreeA[1]["children"][1]["children"][1]["is leaf"]
+pTreeA[1]["children"][1]["children"][1]["children"]
+pTreeA[2]["type"]
+pTreeA[2]["id"]
+pTreeA[2]["expanded"]
+pTreeA[2]["is leaf"]
+pTreeA[2]["children"]
+...
 ```
+
+## Feeding data to a DataView Tree
+
+Your code must handle the `DataForNode` message in order to feed data to the DataView Tree for display. It looks very similar to the `DataForRow` message that a normal DataView receives but has one additional parameters – `pNodeA`. `pNodeA` contains the following keys:
+
+- id
+- type
+- expanded
+- is leaf
+- level
+- child count
+
+```
+command DataForNode pNodeA, pRow, @rDataA, @rTemplateStyle
+  # Use pNodeA["id"] to locate data to feed to rData...
+  # Assign values to keys in rDataA 
+  # Specify the row template style to use in rTemplateStyle
+end DataForNode
+```
+
+You do not need to worry about defining `NumberOfRows()` or `CacheKeyForRow()`. Both of these functions are defined in the DataView Tree behavior. The behavior returns the node `id` property in the `CacheKeyForRow()` function.
+
+## Accessing node and row properties in the tree
+
+
 
 ## Manipulating the tree
 
-A DataView that is using the DataView tree behavior has some additional commands that can be used to manipulate the tree. For example, there is a command for toggle the expanded state of a row or one for showing a particular node. In order to manipulate the tree you will need to pass your data source array to the commands. This is necessary as keys within the array will be modified.
+A DataView Tree has some additional commands that can be used to manipulate the tree. For example, there is a command for toggling the expanded state of a row or one for showing a particular node.
 
-For example, to toggle the state of the tree you can send `TreeToggleRow` to a DataView:
+For example, to toggle the state of the tree you can dispatch `ToggleRowIsExpanded` to a DataView:
 
 ```
 put 4 into tRow
-dispatch "TreeToggleRow" to group "MyDataView" with sDataSetA, tRow
+dispatch "ToggleRowIsExpanded" to group "MyDataView" with tRow
 ```
 
-The list stored in `sDataSetA["visible nodes"]` will be updated and the `expanded` key of the data from `sDataSetA["nodes"]` associated with row 4 will be updated.  
+
