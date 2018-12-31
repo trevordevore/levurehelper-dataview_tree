@@ -180,6 +180,8 @@ command SetRowIsExpanded pRow, pLevelsDown, pExpandedState, pRefreshView
   local tNodeIndexA
   local tCurrentLevel
 
+  if pRow < 1 then throw "invalid row:" && pRow
+
   put pRefreshView is not false into pRefreshView
 
   put sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] into tNodeIndexA
@@ -976,6 +978,8 @@ pNodeIndexA: The node index array.
 Returns: empty
 */
 private command _showNode pNodeIndexA
+  if pNodeIndexA is not an array then throw "invalid node index array"
+
   repeat while pNodeIndexA is an array
     if not sTreeA[pNodeIndexA]["is leaf"] and not sTreeA[pNodeIndexA]["expanded"] then
       _setNodeExpandedState pNodeIndexA, true
