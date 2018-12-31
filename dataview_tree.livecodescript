@@ -293,15 +293,27 @@ Summary: Expands any tree nodes necessary so that the node can be seen.
 
 Parameters:
 pNode: The node `id` or the node index array.
+pRefreshView: Pass in false to keep the view from being refreshed.
 
 Description:
-Call `RefreshView` to redraw the view.
+By default the DataView will be redrawn after calling this handler and the node will
+be scrolled into view. If you pass in `false` for `pRefreshView`
+then call `RefreshView` to redraw the view and `ScrollRowIntoView` to scroll
+the row into view.
 
 Returns: empty
 */
-command ShowNode pNode
+command ShowNode pNode, pRefreshView
   if pNode is not an array then put sNodeIdNodeLookupA[pNode] into pNode
   _showNode pNode
+
+  if pRefreshView then
+    lock screen
+    _refreshView
+    ScrollRowIntoView _rowOfNode(pNode)
+    unlock screen
+  end if
+
   return empty
 end ShowNode
 
