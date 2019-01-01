@@ -174,8 +174,7 @@ pRefreshView: Pass in false to keep the view from being refreshed.
 Description:
 By default the DataView will be redrawn after calling this handler and the newly displayed
 children nodes will be scrolled into view. If you pass in `false` for `pRefreshView`
-then call `RefreshView` to redraw the view and `ScrollRowDescendantsIntoView` to scroll
-the newly displayed rows into view.
+then call `RefreshView` to redraw the view.
 
 Returns: Nothing
 */
@@ -209,10 +208,7 @@ command SetRowIsExpanded pRow, pLevelsDown, pExpandedState, pRefreshView
   end if
 
   if pRefreshView then
-    lock screen
     _refreshView
-    ScrollRowDescendantsIntoView pRow
-    unlock screen
   end if
 
   return empty
