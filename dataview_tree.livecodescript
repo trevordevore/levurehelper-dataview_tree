@@ -1,4 +1,4 @@
-script "DataView Tree Behavior" with behavior "DataView Group Behavior"
+script "DataView Tree Behavior" with behavior "DataView Behavior"
 
 local sTreeA
 local sNodeIdNodeLookupA # key = node id, value = node index array in sTreeA
