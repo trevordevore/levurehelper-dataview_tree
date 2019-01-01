@@ -89,13 +89,16 @@ end RenderView
 
 
 command DataForRow pRow, @rData, @rTemplateStyle
-  local tNodeA, tIndexA
+  local tNodeA, tIndexA, tKey
 
   put sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] into tIndexA
-  put sTreeA[ tIndexA ]["id"] into tNodeA["id"]
-  put sTreeA[ tIndexA ]["type"] into tNodeA["type"]
-  put sTreeA[ tIndexA ]["expanded"] into tNodeA["expanded"]
-  put sTreeA[ tIndexA ]["is leaf"] into tNodeA["is leaf"]
+
+  # id, type, expanded, is leaf, + any custom keys
+  repeat for each key tKey in sTreeA[ tIndexA ]
+    if tKey is "children" then next repeat
+    put sTreeA[ tIndexA ][tKey] into tNodeA[tKey]
+  end repeat
+
   put _nodeLevel(tIndexA) into tNodeA["level"]
   put the number of elements of sTreeA[ tIndexA ]["children"] into tNodeA["child count"]
 
