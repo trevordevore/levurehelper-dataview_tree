@@ -555,6 +555,37 @@ getProp dvtRowChildCount[pRow]
 end dvtRowChildCount
 
 
+setProp dvtRowChildren[pRow] pNodesA
+  put pNodesA into sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["children"]
+  if sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["expanded"] then
+    put true into sRebuildLookupTable
+  end if
+end dvtRowChildren
+
+
+getProp dvtRowChildren[pRow]
+  return sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["children"]
+end dvtRowChildren
+
+
+setProp dvtNodeChildren[pNodeId] pNodesA
+  put pNodesA into sTreeA[ sNodeIdNodeLookupA[pNodeId] ]["children"]
+  if sTreeA[ sNodeIdNodeLookupA[pNodeId] ]["expanded"] then
+    put true into sRebuildLookupTable
+  end if
+end dvtNodeChildren
+
+
+getProp dvtNodeChildren[pNodeId]
+  return sTreeA[ sNodeIdNodeLookupA[pNodeId] ]["children"]
+end dvtNodeChildren
+
+
+function GetValueForKeyInRow pRow, pKey
+  return sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ][pKey]
+end GetValueForKeyInRow
+
+
 /**
 Summary: Returns the number of children that a node has.
 
