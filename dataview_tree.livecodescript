@@ -613,7 +613,7 @@ end dvtNodeChildren
 
 
 /**
-Summary: Returns a custom stored in a rows node array.
+Summary: Returns the value for a custom key stored in a row's node array.
 
 Parameters:
 pRow: The target row.
@@ -632,7 +632,7 @@ end GetValueForKeyInRow
 
 
 /**
-Summary: Sets the value of a custom stored in a rows node array.
+Summary: Sets the value of a custom key stored in a row's node array.
 
 Parameters:
 pRow: The target row.
