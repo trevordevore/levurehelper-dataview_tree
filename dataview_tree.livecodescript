@@ -1,4 +1,5 @@
 script "DataView Tree Behavior" with behavior "DataView Behavior"
+constant kBuiltInProperties = "id,type,expanded,is leaf,children,level,child count"
 
 local sTreeA
 local sNodeIdNodeLookupA # key = node id, value = node index array in sTreeA
@@ -551,6 +552,15 @@ getProp dvtRowChildCount[pRow]
 end dvtRowChildCount
 
 
+/**
+Summary: Sets the child nodes of a row.
+
+Parameters:
+pRow: The target row.
+pNodesA: A numerically indexed array of child node arrays.
+
+Returns: nothing
+*/
 setProp dvtRowChildren[pRow] pNodesA
   put pNodesA into sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["children"]
   if sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["expanded"] then
@@ -559,11 +569,28 @@ setProp dvtRowChildren[pRow] pNodesA
 end dvtRowChildren
 
 
+/**
+Summary: Returns a numerically indexed array of the index arrays of the child nodes of a row.
+
+Parameters:
+pRow: The target row.
+
+Returns: Array
+*/
 getProp dvtRowChildren[pRow]
   return sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ]["children"]
 end dvtRowChildren
 
 
+/**
+Summary: Sets the child nodes of a node.
+
+Parameters:
+pRow: The target node id.
+pNodesA: A numerically indexed array of child node arrays.
+
+Returns: nothing
+*/
 setProp dvtNodeChildren[pNodeId] pNodesA
   put pNodesA into sTreeA[ sNodeIdNodeLookupA[pNodeId] ]["children"]
   if sTreeA[ sNodeIdNodeLookupA[pNodeId] ]["expanded"] then
@@ -572,14 +599,97 @@ setProp dvtNodeChildren[pNodeId] pNodesA
 end dvtNodeChildren
 
 
+/**
+Summary: Returns a numerically indexed array of the index arrays of the child nodes of a node.
+
+Parameters:
+pRow: The target node id.
+
+Returns: Array
+*/
 getProp dvtNodeChildren[pNodeId]
   return sTreeA[ sNodeIdNodeLookupA[pNodeId] ]["children"]
 end dvtNodeChildren
 
 
+/**
+Summary: Returns a custom stored in a rows node array.
+
+Parameters:
+pRow: The target row.
+pKey: The custom key.
+
+Description:
+This function allow you to get the value of a key in the node array that is
+not one of the built-in properties `id`, `type`, `expanded`, `is leaf`, `children`,
+`level`, and `child count`.
+
+Returns: Mixed
+*/
 function GetValueForKeyInRow pRow, pKey
-  return sTreeA[ sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]] ][pKey]
+  return GetValueForKeyInNode(sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]], pKey)
 end GetValueForKeyInRow
+
+
+/**
+Summary: Sets the value of a custom stored in a rows node array.
+
+Parameters:
+pRow: The target row.
+pKey: The custom key.
+pValue: The value to assign to the key.
+
+Description:
+This function allow you to set the value of keys in the node array that is
+not one of the built-in properties `id`, `type`, `expanded`, `is leaf`, `children`,
+`level`, and `child count`.
+
+Returns: nothing
+*/
+command SetValueForKeyInRow pRow, pKey, pValue
+  SetValueForKeyInNode sNodeIdNodeLookupA[sRowtoNodeIdLookupA[pRow]], pKey, pValue
+  return empty
+end SetValueForKeyInRow
+
+
+/**
+Summary: Returns a custom stored in a rows node array.
+
+Parameters:
+pNodeId: The node id or index array.
+pKey: The custom key.
+
+Description:
+See `GetValueForKeyInRow`.
+
+Returns: Mixed
+*/
+function GetValueForKeyInNode pNodeId, pKey
+  if pKey is among the items of kBuiltInProperties then throw pKey && "is not a custom key"
+  if pNodeId is not an array then put sNodeIdNodeLookupA[pNodeId] into pNodeId
+  return sTreeA[ pNodeId ][pKey]
+end GetValueForKeyInNode
+
+
+/**
+Summary: Sets the value of a custom stored in a rows node array.
+
+Parameters:
+pNodeId: The node id or index array.
+pKey: The custom key.
+pValue: The value to assign to the key.
+
+Description:
+See `SetValueForKeyInRow`.
+
+Returns: nothing
+*/
+command SetValueForKeyInNode pNodeId, pKey, pValue
+  if pKey is among the items of kBuiltInProperties then throw pKey && "is not a custom key"
+  if pNodeId is not an array then put sNodeIdNodeLookupA[pNodeId] into pNodeId
+  put pValue into sTreeA[ pNodeId ][pKey]
+  return empty
+end SetValueForKeyInNode
 
 
 /**
@@ -610,17 +720,6 @@ getProp dvtRowChildRows[pRow]
   delete the last char of tList
   return tList
 end dvtRowChildRows
-
-
-/**
-Summary: Returns the node index arrays for children of a node.
-
-Returns: Numerically indexed array.
-*/
-getProp dvtNodeChildNodes[pNodeId]
-  put sNodeIdNodeLookupA[pNodeId] into pNodeId
-  return sTreeA[pNodeId]["children"]
-end dvtNodeChildNodes
 
 
 /**
