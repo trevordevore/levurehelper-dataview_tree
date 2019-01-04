@@ -4,6 +4,14 @@ The DataView Tree helper adds support for working with tree data structures to a
 
 The helper does not provide support for creating UI elements such as an expand/contract widget. It only provides an API that your UI elements can call.
 
+## Demo
+
+The DataView Demo application includes an example of using this helper:
+
+https://github.com/trevordevore/dataview_demo
+
+## Usage
+
 In order to use the DataView Tree helper you must do two things:
 
 1. Assign the behavior of your DataView control to `stack "DataView Tree Behavior"`. If you are already using a custom behavior with your DataView then assign the behavior of your custom behavior to `stack "DataView Tree Behavior"`.
