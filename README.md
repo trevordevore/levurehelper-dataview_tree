@@ -1,8 +1,10 @@
 # DataView Tree Helper
 
-The DataView Tree helper adds support for working with tree data structures to a DataView. This is done by adding a new behavior to the DataView that is a parent behavior of the standard DataView behavior. The new behavior adds an API for setting a tree structure containing nodes, accessing properties of the nodes and associated rows, toggling the expanded state of nodes.
+The DataView Tree helper adds support for working with tree data structures to a [DataView](https://github.com/trevordevore/levurehelper-dataview). This is done by adding a new behavior to the DataView that is a parent behavior of the standard DataView behavior. The new behavior adds an API for setting a tree structure containing nodes, accessing properties of the nodes and associated rows, toggling the expanded state of nodes.
 
 The helper does not provide support for creating UI elements such as an expand/contract widget. It only provides an API that your UI elements can call.
+
+Note that this helper requires the [DataView helper](https://github.com/trevordevore/levurehelper-dataview).
 
 ## Demo
 
