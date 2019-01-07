@@ -16,14 +16,14 @@ https://github.com/trevordevore/dataview_demo
 
 In order to use the DataView Tree helper you must do two things:
 
-1. Assign the behavior of your DataView control to `stack "DataView Tree Behavior"`. If you are already using a custom behavior with your DataView then assign the behavior __of your custom behavior__ to `stack "DataView Tree Behavior"` 
+1. Assign the behavior of your DataView control to `stack "DataView Tree Behavior"`. If you are already using a custom behavior with your DataView then assign the behavior of your custom behavior to `stack "DataView Tree Behavior"`.
 2. Create an array in the specified format and assign it to the `dvtTree` property of the DataView.
 3. Create one or more templates to display types of nodes in the tree.
 4. Implement the `DataForNode` message in order to feed the tree data as needed.
 
 ## The tree array
 
-The DataView Tree uses an array that represents a tree. This array has the least amount of data needed in order for the DataView Tree to work. The actual data that is displayed in the UI will be provided by some other data source. This data is supplied to the DataView Tree by way of the `DataForNode` message.
+The DataView Tree uses an array that represents a tree. This array has the last amount of data needed in order for the DataView Tree to work. The actual data that is displayed in the UI will be provided by some other data source. This data is supplied to the DataView Tree by way of the `DataForNode` message.
 
 The array assigned to the `dvtTree` property is a numerically indexed array of node arrays (arrays nested within an array). Each node array has the following keys:
 
@@ -87,7 +87,7 @@ You do not need to worry about defining `NumberOfRows()` or `CacheKeyForRow()`. 
 
 ## Accessing node and row properties in the tree
 
-The API includes a number of properties for accessing node or row properties. Most properties have both a row and node version. For example, to check if a row or node is a leaf you can check the `dvtRowIsLeaf[pRow]` or `dvtNodeIsLeaf[pNodeId]` property.
+The API includes a number of properties for accessing node or row properties. Most properites have both a row and node version. For example, to check if a row or node is a leaf you can check the `dvtRowIsLeaf[pRow]` or `dvtNodeIsLeaf[pNodeId]` property.
 
 ## Manipulating the tree
 
@@ -480,7 +480,7 @@ If the row does not have a parent then 0 is returned.
 
 **Syntax**: `dvtRowPositionAmongSiblings[pRow] `
 
-**Summary**: Returns an integer representing the position of `pRow` among it's siblings.
+**Summary**: Returns an integer representing the position of `pRow` amongst it's siblings.
 
 **Returns**: Integer
 
