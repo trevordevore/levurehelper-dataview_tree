@@ -103,37 +103,43 @@ dispatch "ToggleRowIsExpanded" to group "MyDataView" with tRow
 ## API
 
 - [CollapseAllNodes](#CollapseAllNodes)
-- [dvtNodeAncestorNodes[pNodeId]](#dvtNodeAncestorNodes[pNodeId])
-- [dvtNodeChildCount[pNodeId]](#dvtNodeChildCount[pNodeId])
-- [dvtNodeChildNodes[pNodeId]](#dvtNodeChildNodes[pNodeId])
-- [dvtNodeDescendantNodes[pNodeId]](#dvtNodeDescendantNodes[pNodeId])
+- [dvHilitedData](#dvHilitedData)
+- [dvHilitedIds](#dvHilitedIds)
+- [dvHilitedIds[pForceScroll]](#dvHilitedIds[pForceScroll])
+- [dvNodeAncestorNodes[pNodeId]](#dvNodeAncestorNodes[pNodeId])
 >
-- [dvtNodeIsExpanded[pNodeId]](#dvtNodeIsExpanded[pNodeId])
-- [dvtNodeIsLeaf[pNodeId]](#dvtNodeIsLeaf[pNodeId])
-- [dvtNodeLevel[pNodeId]](#dvtNodeLevel[pNodeId])
-- [dvtNodeOfId[pNodeId]](#dvtNodeOfId[pNodeId])
-- [dvtNodeParentNode[pNodeId]](#dvtNodeParentNode[pNodeId])
+- [dvNodeChildCount[pNodeId]](#dvNodeChildCount[pNodeId])
+- [dvNodeChildren[pNodeId]](#dvNodeChildren[pNodeId])
+- [dvNodeDescendantNodes[pNodeId]](#dvNodeDescendantNodes[pNodeId])
+- [dvNodeIsExpanded[pNodeId]](#dvNodeIsExpanded[pNodeId])
+- [dvNodeIsLeaf[pNodeId]](#dvNodeIsLeaf[pNodeId])
 >
-- [dvtNodeType[pNodeId]](#dvtNodeType[pNodeId])
+- [dvNodeLevel[pNodeId]](#dvNodeLevel[pNodeId])
+- [dvNodeOfId[pNodeId]](#dvNodeOfId[pNodeId])
+- [dvNodeParentNode[pNodeId]](#dvNodeParentNode[pNodeId])
+- [dvNodeType[pNodeId]](#dvNodeType[pNodeId])
+- [dvRowAncestorNodes[pRow]](#dvRowAncestorNodes[pRow])
+>
+- [dvRowChildCount[pRow]](#dvRowChildCount[pRow])
+- [dvRowChildren[pRow]](#dvRowChildren[pRow])
+- [dvRowChildRows[pRow]](#dvRowChildRows[pRow])
+- [dvRowDescendantNodes[pRow]](#dvRowDescendantNodes[pRow])
+- [dvRowId[pRow]](#dvRowId[pRow])
+>
+- [dvRowIsExpanded[pRow]](#dvRowIsExpanded[pRow])
+- [dvRowIsLeaf[pRow]](#dvRowIsLeaf[pRow])
+- [dvRowLevel[pRow]](#dvRowLevel[pRow])
+- [dvRowNode[pRow]](#dvRowNode[pRow])
+- [dvRowOfId[pNodeId]](#dvRowOfId[pNodeId])
+>
+- [dvRowParentRow[pRow]](#dvRowParentRow[pRow])
+- [dvRowPositionAmongSiblings[pRow]](#dvRowPositionAmongSiblings[pRow])
+- [dvRowType[pRow]](#dvRowType[pRow])
 - [dvTree](#dvTree)
-- [dvtRowAncestorNodes[pRow]](#dvtRowAncestorNodes[pRow])
-- [dvtRowChildCount[pRow]](#dvtRowChildCount[pRow])
-- [dvtRowChildRows[pRow]](#dvtRowChildRows[pRow])
->
-- [dvtRowDescendantNodes[pRow]](#dvtRowDescendantNodes[pRow])
-- [dvtRowId[pRow]](#dvtRowId[pRow])
-- [dvtRowIsExpanded[pRow]](#dvtRowIsExpanded[pRow])
-- [dvtRowIsLeaf[pRow]](#dvtRowIsLeaf[pRow])
-- [dvtRowLevel[pRow]](#dvtRowLevel[pRow])
->
-- [dvtRowNode[pRow]](#dvtRowNode[pRow])
-- [dvtRowOfId[pNodeId]](#dvtRowOfId[pNodeId])
-- [dvtRowParentRow[pRow]](#dvtRowParentRow[pRow])
-- [dvtRowPositionAmongSiblings[pRow]](#dvtRowPositionAmongSiblings[pRow])
-- [dvtRowType[pRow]](#dvtRowType[pRow])
->
-- [dvtTree](#dvtTree)
 - [ExpandAllNodes](#ExpandAllNodes)
+>
+- [GetValueForKeyInNode](#GetValueForKeyInNode)
+- [GetValueForKeyInRow](#GetValueForKeyInRow)
 - [RefreshView](#RefreshView)
 - [RenderView](#RenderView)
 - [ScrollNodeDescendantsIntoView](#ScrollNodeDescendantsIntoView)
@@ -141,9 +147,11 @@ dispatch "ToggleRowIsExpanded" to group "MyDataView" with tRow
 - [ScrollRowDescendantsIntoView](#ScrollRowDescendantsIntoView)
 - [SetNodeIsExpanded](#SetNodeIsExpanded)
 - [SetRowIsExpanded](#SetRowIsExpanded)
+- [SetValueForKeyInNode](#SetValueForKeyInNode)
+- [SetValueForKeyInRow](#SetValueForKeyInRow)
+>
 - [ShowNode](#ShowNode)
 - [ToggleNodeIsExpanded](#ToggleNodeIsExpanded)
->
 - [ToggleRowIsExpanded](#ToggleRowIsExpanded)
 
 <br>
@@ -164,11 +172,67 @@ Call `RefreshView` to redraw the view.
 
 <br>
 
-## <a name="dvtNodeAncestorNodes[pNodeId]"></a>dvtNodeAncestorNodes[pNodeId]
+## <a name="dvHilitedData"></a>dvHilitedData
 
 **Type**: getProp
 
-**Syntax**: `dvtNodeAncestorNodes[pNodeId] `
+**Syntax**: `dvHilitedData `
+
+**Summary**: Returns the `id` property of the selected row(s).
+
+**Returns**: Comma-delimited list of integers
+
+**Description**:
+
+If not rows are selected then empty is returned.
+
+<br>
+
+## <a name="dvHilitedIds"></a>dvHilitedIds
+
+**Type**: getProp
+
+**Syntax**: `dvHilitedIds `
+
+**Summary**: Returns the `id` property of the selected row(s).
+
+**Returns**: Comma-delimited list of integers
+
+**Description**:
+
+If not rows are selected then empty is returned.
+
+<br>
+
+## <a name="dvHilitedIds[pForceScroll]"></a>dvHilitedIds[pForceScroll]
+
+**Type**: setProp
+
+**Syntax**: `dvHilitedIds[pForceScroll] <pIds>`
+
+**Summary**: Sets the selected row based on the `id` property of a row(s).
+
+**Parameters**:
+
+| Name | Description |
+|:---- |:----------- |
+| `pIds` |  Comma-delimited list of ids to hilite. |
+
+**Description**:
+
+If any ids in `pIds` is not currently associated with a row then the tree
+will be expanded to show it.
+
+Note that if your ids have a "," in them then this property won't work correctly.
+
+
+<br>
+
+## <a name="dvNodeAncestorNodes[pNodeId]"></a>dvNodeAncestorNodes[pNodeId]
+
+**Type**: getProp
+
+**Syntax**: `dvNodeAncestorNodes[pNodeId] `
 
 **Summary**: Returns index arrays pointing to ancestors of a node.
 
@@ -176,11 +240,11 @@ Call `RefreshView` to redraw the view.
 
 <br>
 
-## <a name="dvtNodeChildCount[pNodeId]"></a>dvtNodeChildCount[pNodeId]
+## <a name="dvNodeChildCount[pNodeId]"></a>dvNodeChildCount[pNodeId]
 
 **Type**: getProp
 
-**Syntax**: `dvtNodeChildCount[pNodeId] `
+**Syntax**: `dvNodeChildCount[pNodeId] `
 
 **Summary**: Returns the number of children that a node has.
 
@@ -188,23 +252,23 @@ Call `RefreshView` to redraw the view.
 
 <br>
 
-## <a name="dvtNodeChildNodes[pNodeId]"></a>dvtNodeChildNodes[pNodeId]
+## <a name="dvNodeChildren[pNodeId]"></a>dvNodeChildren[pNodeId]
 
 **Type**: getProp
 
-**Syntax**: `dvtNodeChildNodes[pNodeId] `
+**Syntax**: `dvNodeChildren[pNodeId] `
 
-**Summary**: Returns the node index arrays for children of a node.
+**Summary**: Returns a numerically indexed array of the index arrays of the child nodes of a node.
 
-**Returns**: Numerically indexed array.
+**Returns**: Array
 
 <br>
 
-## <a name="dvtNodeDescendantNodes[pNodeId]"></a>dvtNodeDescendantNodes[pNodeId]
+## <a name="dvNodeDescendantNodes[pNodeId]"></a>dvNodeDescendantNodes[pNodeId]
 
 **Type**: getProp
 
-**Syntax**: `dvtNodeDescendantNodes[pNodeId] `
+**Syntax**: `dvNodeDescendantNodes[pNodeId] `
 
 **Summary**: Returns index arrays that point to the descendants of a node.
 
@@ -212,23 +276,34 @@ Call `RefreshView` to redraw the view.
 
 <br>
 
-## <a name="dvtNodeIsExpanded[pNodeId]"></a>dvtNodeIsExpanded[pNodeId]
+## <a name="dvNodeIsExpanded[pNodeId]"></a>dvNodeIsExpanded[pNodeId]
 
-**Type**: getProp
+**Type**: setProp
 
-**Syntax**: `dvtNodeIsExpanded[pNodeId] `
+**Syntax**: `dvNodeIsExpanded[pNodeId] <pIsExpanded>`
 
-**Summary**: Returns the `expanded` property of the node.
+**Summary**: Expands the target node.
 
-**Returns**: Boolean
+**Parameters**:
+
+| Name | Description |
+|:---- |:----------- |
+| `pIsExpanded` |  Boolean value. |
+
+**Description**:
+
+Setting this property will not refresh the DataView.
+
+For more options when expanding a row see `SetNodeIsExpanded`.
+
 
 <br>
 
-## <a name="dvtNodeIsLeaf[pNodeId]"></a>dvtNodeIsLeaf[pNodeId]
+## <a name="dvNodeIsLeaf[pNodeId]"></a>dvNodeIsLeaf[pNodeId]
 
 **Type**: getProp
 
-**Syntax**: `dvtNodeIsLeaf[pNodeId] `
+**Syntax**: `dvNodeIsLeaf[pNodeId] `
 
 **Summary**: Returns the `is leaf` property of the node.
 
@@ -236,11 +311,11 @@ Call `RefreshView` to redraw the view.
 
 <br>
 
-## <a name="dvtNodeLevel[pNodeId]"></a>dvtNodeLevel[pNodeId]
+## <a name="dvNodeLevel[pNodeId]"></a>dvNodeLevel[pNodeId]
 
 **Type**: getProp
 
-**Syntax**: `dvtNodeLevel[pNodeId] `
+**Syntax**: `dvNodeLevel[pNodeId] `
 
 **Summary**: Returns the tree level of a node.
 
@@ -248,11 +323,11 @@ Call `RefreshView` to redraw the view.
 
 <br>
 
-## <a name="dvtNodeOfId[pNodeId]"></a>dvtNodeOfId[pNodeId]
+## <a name="dvNodeOfId[pNodeId]"></a>dvNodeOfId[pNodeId]
 
 **Type**: getProp
 
-**Syntax**: `dvtNodeOfId[pNodeId] `
+**Syntax**: `dvNodeOfId[pNodeId] `
 
 **Summary**: Finds a node by `id` and returns the index array pointing to a node in the tree.
 
@@ -294,11 +369,11 @@ put tPersonA[tIndexA]["name"] into tChildName
 
 <br>
 
-## <a name="dvtNodeParentNode[pNodeId]"></a>dvtNodeParentNode[pNodeId]
+## <a name="dvNodeParentNode[pNodeId]"></a>dvNodeParentNode[pNodeId]
 
 **Type**: getProp
 
-**Syntax**: `dvtNodeParentNode[pNodeId] `
+**Syntax**: `dvNodeParentNode[pNodeId] `
 
 **Summary**: Returns a node's parent node id.
 
@@ -310,13 +385,204 @@ If the node does not have a parent then empty is returned.
 
 <br>
 
-## <a name="dvtNodeType[pNodeId]"></a>dvtNodeType[pNodeId]
+## <a name="dvNodeType[pNodeId]"></a>dvNodeType[pNodeId]
 
 **Type**: getProp
 
-**Syntax**: `dvtNodeType[pNodeId] `
+**Syntax**: `dvNodeType[pNodeId] `
 
 **Summary**: Returns the `type` of the node.
+
+**Returns**: Value
+
+<br>
+
+## <a name="dvRowAncestorNodes[pRow]"></a>dvRowAncestorNodes[pRow]
+
+**Type**: getProp
+
+**Syntax**: `dvRowAncestorNodes[pRow] `
+
+**Summary**: Returns index arrays pointing to ancestors of a row.
+
+**Returns**: Numerically indexed array of index arrays
+
+<br>
+
+## <a name="dvRowChildCount[pRow]"></a>dvRowChildCount[pRow]
+
+**Type**: getProp
+
+**Syntax**: `dvRowChildCount[pRow] `
+
+**Summary**: Returns the number of children that a row has.
+
+**Returns**: Integer
+
+<br>
+
+## <a name="dvRowChildren[pRow]"></a>dvRowChildren[pRow]
+
+**Type**: getProp
+
+**Syntax**: `dvRowChildren[pRow] `
+
+**Summary**: Returns a numerically indexed array of the index arrays of the child nodes of a row.
+
+**Returns**: Array
+
+<br>
+
+## <a name="dvRowChildRows[pRow]"></a>dvRowChildRows[pRow]
+
+**Type**: getProp
+
+**Syntax**: `dvRowChildRows[pRow] `
+
+**Summary**: Returns the row numbers of a row's children.
+
+**Returns**: List
+
+<br>
+
+## <a name="dvRowDescendantNodes[pRow]"></a>dvRowDescendantNodes[pRow]
+
+**Type**: getProp
+
+**Syntax**: `dvRowDescendantNodes[pRow] `
+
+**Summary**: Returns the node keys of the descendants of a row.
+
+**Returns**: Numerically indexed array of index arrays
+
+<br>
+
+## <a name="dvRowId[pRow]"></a>dvRowId[pRow]
+
+**Type**: getProp
+
+**Syntax**: `dvRowId[pRow] `
+
+**Summary**: Returns the `id` of the row's node.
+
+**Returns**: Mixed
+
+<br>
+
+## <a name="dvRowIsExpanded[pRow]"></a>dvRowIsExpanded[pRow]
+
+**Type**: setProp
+
+**Syntax**: `dvRowIsExpanded[pRow] <pIsExpanded>`
+
+**Summary**: Expands the target row.
+
+**Parameters**:
+
+| Name | Description |
+|:---- |:----------- |
+| `pIsExpanded` |  Boolean value. |
+
+**Description**:
+
+For more options when expanding a row see `SetRowIsExpanded`.
+
+
+<br>
+
+## <a name="dvRowIsLeaf[pRow]"></a>dvRowIsLeaf[pRow]
+
+**Type**: getProp
+
+**Syntax**: `dvRowIsLeaf[pRow] `
+
+**Summary**: Returns the `is leaf` property of the row's node.
+
+**Returns**: Boolean
+
+<br>
+
+## <a name="dvRowLevel[pRow]"></a>dvRowLevel[pRow]
+
+**Type**: getProp
+
+**Syntax**: `dvRowLevel[pRow] `
+
+**Summary**: Returns the tree level of a row.
+
+**Returns**: Integer
+
+<br>
+
+## <a name="dvRowNode[pRow]"></a>dvRowNode[pRow]
+
+**Type**: getProp
+
+**Syntax**: `dvRowNode[pRow] `
+
+**Summary**: Returns the node index array of the node associated with a row.
+
+**Returns**: Array
+
+<br>
+
+## <a name="dvRowOfId[pNodeId]"></a>dvRowOfId[pNodeId]
+
+**Type**: getProp
+
+**Syntax**: `dvRowOfId[pNodeId] `
+
+**Summary**: Returns the row assigned to a node.
+
+**Returns**: Integer
+
+**Description**:
+
+If no row is associated with the id passed in then 0 is returned.
+A valid id will not have a row if it is the descendant of an
+ancestor that is not expanded.
+
+<br>
+
+## <a name="dvRowParentRow[pRow]"></a>dvRowParentRow[pRow]
+
+**Type**: getProp
+
+**Syntax**: `dvRowParentRow[pRow] `
+
+**Summary**: Returns the row number of a rows parent.
+
+**Returns**: Integer
+
+**Description**:
+
+If the row does not have a parent then 0 is returned.
+
+<br>
+
+## <a name="dvRowPositionAmongSiblings[pRow]"></a>dvRowPositionAmongSiblings[pRow]
+
+**Type**: getProp
+
+**Syntax**: `dvRowPositionAmongSiblings[pRow] `
+
+**Summary**: Returns an integer representing the position of `pRow` amongst it's siblings.
+
+**Returns**: Integer
+
+**Description**:
+
+If pRow is the third child of it's parent then this property would return `3`.
+
+<br>
+
+## <a name="dvRowType[pRow]"></a>dvRowType[pRow]
+
+**Type**: getProp
+
+**Syntax**: `dvRowType[pRow] `
+
+**Summary**: Returns the `type` of the row's node.
 
 **Returns**: Mixed
 
@@ -334,237 +600,6 @@ If the node does not have a parent then empty is returned.
 
 <br>
 
-## <a name="dvtRowAncestorNodes[pRow]"></a>dvtRowAncestorNodes[pRow]
-
-**Type**: getProp
-
-**Syntax**: `dvtRowAncestorNodes[pRow] `
-
-**Summary**: Returns index arrays pointing to ancestors of a row.
-
-**Returns**: Numerically indexed array of index arrays
-
-<br>
-
-## <a name="dvtRowChildCount[pRow]"></a>dvtRowChildCount[pRow]
-
-**Type**: getProp
-
-**Syntax**: `dvtRowChildCount[pRow] `
-
-**Summary**: Returns the number of children that a row has.
-
-**Returns**: Integer
-
-<br>
-
-## <a name="dvtRowChildRows[pRow]"></a>dvtRowChildRows[pRow]
-
-**Type**: getProp
-
-**Syntax**: `dvtRowChildRows[pRow] `
-
-**Summary**: Returns the row numbers of a row's children.
-
-**Returns**: List
-
-<br>
-
-## <a name="dvtRowDescendantNodes[pRow]"></a>dvtRowDescendantNodes[pRow]
-
-**Type**: getProp
-
-**Syntax**: `dvtRowDescendantNodes[pRow] `
-
-**Summary**: Returns the node keys of the descendants of a row.
-
-**Returns**: Numerically indexed array of index arrays
-
-<br>
-
-## <a name="dvtRowId[pRow]"></a>dvtRowId[pRow]
-
-**Type**: getProp
-
-**Syntax**: `dvtRowId[pRow] `
-
-**Summary**: Returns the `id` of the row's node.
-
-**Returns**: Mixed
-
-<br>
-
-## <a name="dvtRowIsExpanded[pRow]"></a>dvtRowIsExpanded[pRow]
-
-**Type**: getProp
-
-**Syntax**: `dvtRowIsExpanded[pRow] `
-
-**Summary**: Returns the `expanded` property of the row's node.
-
-**Returns**: Boolean
-
-<br>
-
-## <a name="dvtRowIsLeaf[pRow]"></a>dvtRowIsLeaf[pRow]
-
-**Type**: getProp
-
-**Syntax**: `dvtRowIsLeaf[pRow] `
-
-**Summary**: Returns the `is leaf` property of the row's node.
-
-**Returns**: Boolean
-
-<br>
-
-## <a name="dvtRowLevel[pRow]"></a>dvtRowLevel[pRow]
-
-**Type**: getProp
-
-**Syntax**: `dvtRowLevel[pRow] `
-
-**Summary**: Returns the tree level of a row.
-
-**Returns**: Integer
-
-<br>
-
-## <a name="dvtRowNode[pRow]"></a>dvtRowNode[pRow]
-
-**Type**: getProp
-
-**Syntax**: `dvtRowNode[pRow] `
-
-**Summary**: Returns the node index array of the node associated with a row.
-
-**Returns**: Array
-
-<br>
-
-## <a name="dvtRowOfId[pNodeId]"></a>dvtRowOfId[pNodeId]
-
-**Type**: getProp
-
-**Syntax**: `dvtRowOfId[pNodeId] `
-
-**Summary**: Returns the row assigned to a node.
-
-**Returns**: Integer or empty if not found
-
-**Description**:
-
-The row may be empty if it isn't currently visible or caching is not turned on.
-
-<br>
-
-## <a name="dvtRowParentRow[pRow]"></a>dvtRowParentRow[pRow]
-
-**Type**: getProp
-
-**Syntax**: `dvtRowParentRow[pRow] `
-
-**Summary**: Returns the row number of a rows parent.
-
-**Returns**: Integer
-
-**Description**:
-
-If the row does not have a parent then 0 is returned.
-
-<br>
-
-## <a name="dvtRowPositionAmongSiblings[pRow]"></a>dvtRowPositionAmongSiblings[pRow]
-
-**Type**: getProp
-
-**Syntax**: `dvtRowPositionAmongSiblings[pRow] `
-
-**Summary**: Returns an integer representing the position of `pRow` among it's siblings.
-
-**Returns**: Integer
-
-**Description**:
-
-If pRow is the third child of it's parent then this property would return `3`.
-
-<br>
-
-## <a name="dvtRowType[pRow]"></a>dvtRowType[pRow]
-
-**Type**: getProp
-
-**Syntax**: `dvtRowType[pRow] `
-
-**Summary**: Returns the `type` of the row's node.
-
-**Returns**: Mixed
-
-<br>
-
-## <a name="dvtTree"></a>dvtTree
-
-**Type**: setProp
-
-**Syntax**: `dvtTree <pTreeA>`
-
-**Summary**: Sets the tree used to display source tree data.
-
-**Returns**: nothing
-
-**Parameters**:
-
-| Name | Description |
-|:---- |:----------- |
-| `pTreeA` |  An array representing tree used to draw the tree in the DataView. |
-
-**Description**:
-
-Displaying a data source that has a tree structure requires two trees. The
-data source itself as well as the tree used by the DataView Tree behavior.
-The DataView uses an array that is populated with node arrays. A node array has
-the following format:
-
-```
-pNodeA[type|id|expanded|children|is leaf]
-```
-
-A node can have other nodes as `children`. A tree is made up of one or more
-nodes.
-
-```
-pTreeA[1][type|id|expanded|children|is leaf]
-pTreeA[n][type|id|expanded|children|is leaf]
-```
-
-Here is an example of a tree with three nodes – one node at the root, one node
-as a child of the root node, and one node as the child of the child of the root node.
-
-```
-pTreeA[1]["type"]
-pTreeA[1]["id"]
-pTreeA[1]["expanded"]
-pTreeA[1]["is leaf"]
-pTreeA[1]["children"]
-pTreeA[1]["children"][1]["type"]
-pTreeA[1]["children"][1]["id"]
-pTreeA[1]["children"][1]["expanded"]
-pTreeA[1]["children"][1]["is leaf"]
-pTreeA[1]["children"][1]["children"]
-pTreeA[1]["children"][1]["children"][1]["type"]
-pTreeA[1]["children"][1]["children"][1]["id"]
-pTreeA[1]["children"][1]["children"][1]["expanded"]
-pTreeA[1]["children"][1]["children"][1]["is leaf"]
-pTreeA[1]["children"][1]["children"][1]["children"]
-```
-
-At a minimum you should define the `type` and `id` properties for each node.
-`id` should uniquely identify the node in the entire tree. `type` is used to
-distinguish nodes from each other.
-`expanded` is a boolean value and defaults to `false` if no value is present.
-
-<br>
-
 ## <a name="ExpandAllNodes"></a>ExpandAllNodes
 
 **Type**: command
@@ -578,6 +613,53 @@ distinguish nodes from each other.
 **Description**:
 
 Call `RefreshView` to redraw the view.
+
+<br>
+
+## <a name="GetValueForKeyInNode"></a>GetValueForKeyInNode
+
+**Type**: function
+
+**Syntax**: `GetValueForKeyInNode(<pNodeId>,<pKey>)`
+
+**Summary**: Returns the key value for a node array.
+
+**Returns**: Mixed
+
+**Parameters**:
+
+| Name | Description |
+|:---- |:----------- |
+| `pNodeId` |  The node id or index array. |
+| `pKey` |  The key. |
+
+**Description**:
+
+See `GetValueForKeyInRow`.
+
+<br>
+
+## <a name="GetValueForKeyInRow"></a>GetValueForKeyInRow
+
+**Type**: function
+
+**Syntax**: `GetValueForKeyInRow(<pRow>,<pKey>)`
+
+**Summary**: Returns the value for a key stored in a row's node array.
+
+**Returns**: Mixed
+
+**Parameters**:
+
+| Name | Description |
+|:---- |:----------- |
+| `pRow` |  The target row. |
+| `pKey` |  The key. |
+
+**Description**:
+
+This function allow you to get the value of a key in the node array that doesn't
+have a built-in getProp handler.
 
 <br>
 
@@ -668,7 +750,10 @@ pRow off the top.
 
 **Description**:
 
-See `SetRowIsExpanded`.
+Expands the target node, expanding ancestors if need be in order to show the
+target node.
+
+See `SetRowIsExpanded` for more information.
 
 <br>
 
@@ -695,8 +780,57 @@ See `SetRowIsExpanded`.
 
 By default the DataView will be redrawn after calling this handler and the newly displayed
 children nodes will be scrolled into view. If you pass in `false` for `pRefreshView`
-then call `RefreshView` to redraw the view and `ScrollRowDescendantsIntoView` to scroll
-the newly displayed rows into view.
+then call `RefreshView` to redraw the view.
+
+<br>
+
+## <a name="SetValueForKeyInNode"></a>SetValueForKeyInNode
+
+**Type**: command
+
+**Syntax**: `SetValueForKeyInNode <pNodeId>,<pKey>,<pValue>`
+
+**Summary**: Sets the value of a custom key stored in a rows node array.
+
+**Returns**: nothing
+
+**Parameters**:
+
+| Name | Description |
+|:---- |:----------- |
+| `pNodeId` |  The node id or index array. |
+| `pKey` |  The custom key. |
+| `pValue` |  The value to assign to the key. |
+
+**Description**:
+
+See `SetValueForKeyInRow`.
+
+<br>
+
+## <a name="SetValueForKeyInRow"></a>SetValueForKeyInRow
+
+**Type**: command
+
+**Syntax**: `SetValueForKeyInRow <pRow>,<pKey>,<pValue>`
+
+**Summary**: Sets the value of a custom key stored in a row's node array.
+
+**Returns**: nothing
+
+**Parameters**:
+
+| Name | Description |
+|:---- |:----------- |
+| `pRow` |  The target row. |
+| `pKey` |  The custom key. |
+| `pValue` |  The value to assign to the key. |
+
+**Description**:
+
+This function allow you to set the value of a key in the node array that is
+not one of the built-in properties `id`, `type`, `expanded`, `is leaf`, `children`,
+`level`, and `child count`.
 
 <br>
 
