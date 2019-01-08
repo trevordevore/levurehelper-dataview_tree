@@ -467,6 +467,21 @@ end dvRowId
 
 
 /**
+Summary: Sets the `type` of a row.
+
+Parameters:
+pRow: The target row.
+pType: The type.
+
+Description:
+Setting this property will not refresh the DataView.
+*/
+setProp dvRowType[pRow] pType
+  put pType into sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["type"]
+end dvRowType
+
+
+/**
 Summary: Returns the `type` of the row's node.
 
 Parameters:
@@ -477,6 +492,22 @@ Returns: Mixed
 getProp dvRowType[pRow]
   return sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["type"]
 end dvRowType
+
+
+/**
+Summary: Sets the `type` of a node.
+
+Parameters:
+pNodeId: The target node id.
+pType: The type.
+
+Description:
+Setting this property will not refresh the DataView.
+*/
+setProp dvNodeType[pNodeId] pType
+  put _findNodeOfId(pNodeId, true) into pNodeId
+  put pType into sTreeA[ pNodeId ]["type"]
+end dvNodeType
 
 
 /**
@@ -541,11 +572,28 @@ pRow: The target row
 pIsExpanded: Boolean value.
 
 Description:
+Setting this property will not refresh the DataView.
+
 For more options when expanding a row see `SetNodeIsExpanded`.
 */
 setProp dvNodeIsExpanded[pNodeId] pIsExpanded
   SetNodeIsExpanded pNodeId, 0, pIsExpanded is true, true
 end dvNodeIsExpanded
+
+
+/**
+Summary: Sets the `is leaf` of a row.
+
+Parameters:
+pRow: The target row.
+pIsLeaf: Boolean.
+
+Description:
+Setting this property will not refresh the DataView.
+*/
+setProp dvRowIsLeaf[pRow] pIsLeaf
+  put pIsLeaf is true into sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["is leaf"]
+end dvRowIsLeaf
 
 
 /**
@@ -559,6 +607,22 @@ Returns: Boolean
 getProp dvRowIsLeaf[pRow]
   return sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["is leaf"]
 end dvRowIsLeaf
+
+
+/**
+Summary: Sets the `is leaf` of a node.
+
+Parameters:
+pNodeId: The target node id.
+pIsLeaf: Boolean.
+
+Description:
+Setting this property will not refresh the DataView.
+*/
+setProp dvNodeIsLeaf[pNodeId] pIsLeaf
+  put _findNodeOfId(pNodeId, true) into pNodeId
+  put pIsLeaf is true into sTreeA[ pNodeId ]["is leaf"]
+end dvNodeIsLeaf
 
 
 /**
@@ -625,7 +689,8 @@ Parameters:
 pRow: The target node id.
 pNodesA: A numerically indexed array of child node arrays.
 
-Returns: nothing
+Description:
+Setting this property will not refresh the DataView.
 */
 setProp dvNodeChildren[pNodeId] pNodesA
   put _findNodeOfId(pNodeId, true) into pNodeId
@@ -653,16 +718,15 @@ end dvNodeChildren
 
 
 /**
-Summary: Returns the value for a custom key stored in a row's node array.
+Summary: Returns the value for a key stored in a row's node array.
 
 Parameters:
 pRow: The target row.
-pKey: The custom key.
+pKey: The key.
 
 Description:
-This function allow you to get the value of a key in the node array that is
-not one of the built-in properties `id`, `type`, `expanded`, `is leaf`, `children`,
-`level`, and `child count`.
+This function allow you to get the value of a key in the node array that doesn't
+have a built-in getProp handler.
 
 Returns: Mixed
 */
@@ -680,7 +744,7 @@ pKey: The custom key.
 pValue: The value to assign to the key.
 
 Description:
-This function allow you to set the value of keys in the node array that is
+This function allow you to set the value of a key in the node array that is
 not one of the built-in properties `id`, `type`, `expanded`, `is leaf`, `children`,
 `level`, and `child count`.
 
@@ -693,11 +757,11 @@ end SetValueForKeyInRow
 
 
 /**
-Summary: Returns a custom stored in a rows node array.
+Summary: Returns the key value for a node array.
 
 Parameters:
 pNodeId: The node id or index array.
-pKey: The custom key.
+pKey: The key.
 
 Description:
 See `GetValueForKeyInRow`.
@@ -705,14 +769,13 @@ See `GetValueForKeyInRow`.
 Returns: Mixed
 */
 function GetValueForKeyInNode pNodeId, pKey
-  if pKey is among the items of kBuiltInProperties then throw pKey && "is not a custom key"
   if pNodeId is not an array then put _findNodeOfId(pNodeId, true) into pNodeId
   return sTreeA[ pNodeId ][pKey]
 end GetValueForKeyInNode
 
 
 /**
-Summary: Sets the value of a custom stored in a rows node array.
+Summary: Sets the value of a custom key stored in a rows node array.
 
 Parameters:
 pNodeId: The node id or index array.
