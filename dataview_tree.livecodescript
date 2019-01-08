@@ -233,7 +233,7 @@ See `SetRowIsExpanded` for more information.
 Returns: empty
 */
 command SetNodeIsExpanded pNode, pLevelsDown, pExpandedState, pRefreshView
-  if pNode is not an array then put _findNodeOfId(pNode) into pNode
+  if pNode is not an array then put _findNodeOfId(pNode, true) into pNode
 
   # Make sure node is visible
   _showNode pNode
@@ -288,7 +288,7 @@ Returns: empty
 command ToggleNodeIsExpanded pNode, pLevelsDown, pRefreshView
   local tExpandedState
 
-  if pNode is not an array then put _findNodeOfId(pNode) into pNode
+  if pNode is not an array then put _findNodeOfId(pNode, true) into pNode
 
   put not sTreeA[pNode]["expanded"] into tExpandedState
   SetNodeIsExpanded pNode, pLevelsDown, tExpandedState, pRefreshView
@@ -421,7 +421,7 @@ put tPersonA[tIndexA]["name"] into tChildName
 Returns: Index array
 */
 getProp dvNodeOfId[pNodeId]
-  return _findNodeOfId(pNodeId)
+  return _findNodeOfId(pNodeId, false)
 end dvNodeOfId
 
 
@@ -628,7 +628,7 @@ pNodesA: A numerically indexed array of child node arrays.
 Returns: nothing
 */
 setProp dvNodeChildren[pNodeId] pNodesA
-  put _findNodeOfId(pNodeId) into pNodeId
+  put _findNodeOfId(pNodeId, true) into pNodeId
 
   if sTreeA[ pNodeId ]["is leaf"] then throw "cannot set children property on a leaf node"
 
@@ -706,7 +706,7 @@ Returns: Mixed
 */
 function GetValueForKeyInNode pNodeId, pKey
   if pKey is among the items of kBuiltInProperties then throw pKey && "is not a custom key"
-  if pNodeId is not an array then put _findNodeOfId(pNodeId) into pNodeId
+  if pNodeId is not an array then put _findNodeOfId(pNodeId, true) into pNodeId
   return sTreeA[ pNodeId ][pKey]
 end GetValueForKeyInNode
 
@@ -726,7 +726,7 @@ Returns: nothing
 */
 command SetValueForKeyInNode pNodeId, pKey, pValue
   if pKey is among the items of kBuiltInProperties then throw pKey && "is not a custom key"
-  if pNodeId is not an array then put _findNodeOfId(pNodeId) into pNodeId
+  if pNodeId is not an array then put _findNodeOfId(pNodeId, true) into pNodeId
   put pValue into sTreeA[ pNodeId ][pKey]
   return empty
 end SetValueForKeyInNode
@@ -738,7 +738,7 @@ Summary: Returns the number of children that a node has.
 Returns: Integer
 */
 getProp dvNodeChildCount[pNodeId]
-  put _findNodeOfId(pNodeId) into pNodeId
+  put _findNodeOfId(pNodeId, true) into pNodeId
   if not sTreeA[pNodeId]["is leaf"] then
     return the number of elements of sTreeA[pNodeId]["children"]
   else
@@ -791,7 +791,7 @@ pNode: The node `id`.
 Returns: Integer
 */
 getProp dvNodeLevel[pNodeId]
-  put _findNodeOfId(pNodeId) into pNodeId
+  put _findNodeOfId(pNodeId, true) into pNodeId
   return _nodeLevel(pNodeId)
 end dvNodeLevel
 
@@ -844,7 +844,7 @@ Returns: Integer
 */
 getProp dvNodeParentNode[pNodeId]
   local tNodeIndexA
-  put _findNodeOfId(pNodeId) into pNodeId
+  put _findNodeOfId(pNodeId, true) into pNodeId
   put _parentNodeIndex(pNodeId) into tNodeIndexA
 
   if tNodeIndexA is an array then
@@ -877,7 +877,7 @@ pNode: The node `id`.
 Returns: Numerically indexed array of index arrays
 */
 getProp dvNodeAncestorNodes[pNodeId]
-  put _findNodeOfId(pNodeId) into pNodeId
+  put _findNodeOfId(pNodeId, true) into pNodeId
   return _ancestorElements(pNodeId)
 end dvNodeAncestorNodes
 
@@ -905,7 +905,7 @@ pOnlyVisible: Pass in true to only return the visible descendant elements. Defau
 Returns: Numerically indexed array of index arrays
 */
 getProp dvNodeDescendantNodes[pNodeId]
-  put _findNodeOfId(pNodeId) into pNodeId
+  put _findNodeOfId(pNodeId, true) into pNodeId
   return _descendantElements(pNodeId, false)
 end dvNodeDescendantNodes
 
@@ -952,11 +952,14 @@ will be expanded to show it.
 Note that if your ids have a "," in them then this property won't work correctly.
 */
 setProp dvHilitedIds[pForceScroll] pIds
-  local tId, tRows
+  local tId, tNodeIndexA, tRows
 
   repeat for each item tId in pIds
     if sNodeIdRowLookupA[tId] is empty then
-      _showNode _findNodeOfId(tId)
+      put _findNodeOfId(tId, false) into tNodeIndexA
+      if tNodeIndexA is an array then
+        _showNode tNodeIndexA
+      end if
     end if
   end repeat
 
@@ -1144,7 +1147,7 @@ end _rowOfNode
 
 
 private function _getNodeProperty pNodeId, pProperty
-  put _findNodeOfId(pNodeId) into pNodeId
+  put _findNodeOfId(pNodeId, true) into pNodeId
   return sTreeA[pNodeId][pProperty]
 end _getNodeProperty
 
@@ -1167,12 +1170,16 @@ private function _nodeLevel pNodeIndexA
 end _nodeLevel
 
 
-private function _findNodeOfId pNodeId
+private function _findNodeOfId pNodeId, pWithValidation
   local tFoundIndexA
 
   put _searchBranchForNodeId(sTreeA, empty, pNodeId) into tFoundIndexA
   if tFoundIndexA is not an array then
-    throw "node id not found:" && pNodeId
+    if pWithValidation then
+      throw "node id not found:" && pNodeId
+    else
+      return empty
+    end if
   else
     return tFoundIndexA
   end if
