@@ -942,6 +942,7 @@ end dvHilitedId
 Summary: Sets the selected row based on the `id` property of a row(s).
 
 Parameters:
+pForceScroll: Passed along to `dvHilitedRow` in the DataView behavior.
 pIds: Comma-delimited list of ids to hilite.
 
 Description:
@@ -950,7 +951,7 @@ will be expanded to show it.
 
 Note that if your ids have a "," in them then this property won't work correctly.
 */
-setProp dvHilitedIds pIds
+setProp dvHilitedIds[pForceScroll] pIds
   local tId, tRows
 
   repeat for each item tId in pIds
@@ -970,12 +971,12 @@ setProp dvHilitedIds pIds
   end repeat
   delete the last char of tRows
 
-  set the dvHilitedRow of me to tRows
+  set the dvHilitedRow[pForceScroll] of me to tRows
 end dvHilitedIds
 
 
-setProp dvHilitedId pIds
-  set the dvHilitedIds of me to pIds
+setProp dvHilitedId[pForceScroll] pIds
+  set the dvHilitedIds[pForceScroll] of me to pIds
 end dvHilitedId
 
 
