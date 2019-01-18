@@ -1,2 +1,4 @@
+name: DataView Tree
 behaviors:
   - filename: dataview_tree.livecodescript
+dependencies: DataView
