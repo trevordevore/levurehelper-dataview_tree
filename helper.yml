@@ -1,4 +1,10 @@
 name: DataView Tree
 behaviors:
   - filename: dataview_tree.livecodescript
+libraries:
+  - filename: ide/ide_library.livecodescript
+    distribute: false
+ui:
+  - filename: ide/row_templates.livecode
+    distribute: false
 dependencies: DataView
