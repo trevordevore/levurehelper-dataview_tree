@@ -21,6 +21,14 @@ In order to use the DataView Tree helper you must do two things:
 3. Create one or more templates to display types of nodes in the tree.
 4. Implement the `DataForNode` message in order to feed the tree data as needed.
 
+## Creating a DataView Tree
+
+The DataView helper includes a command which can create DataView Tree group controls in the LiveCode IDE:
+
+- `dvtIdecreateDataViewTreeControlUsingDialog pTargetCard`
+
+`dvtIdecreateDataViewTreeControlUsingDialog` will call `dvIdeCreateDataViewControlUsingDialog` (see [DataView](https://github.com/trevordevore/levurehelper-dataview readme)) with some options customized for the DataView Tree.
+
 ## The tree array
 
 The DataView Tree uses an array that represents a tree. This array has the least amount of data needed in order for the DataView Tree to work. The actual data that is displayed in the UI will be provided by some other data source. This data is supplied to the DataView Tree by way of the `DataForNode` message.
