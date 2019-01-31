@@ -14,8 +14,6 @@ Parameters:
 pTreeA: An array representing tree used to draw the tree in the DataView.
 
 Description:
-Displaying a data source that has a tree structure requires two trees. The
-data source itself as well as the tree used by the DataView Tree behavior.
 The DataView uses an array that is populated with node arrays. A node array has
 the following format:
 
@@ -63,6 +61,10 @@ setProp dvTree pTreeA
   put pTreeA into sTreeA
   _buildRowToNodeLookup
   put false into sRebuildLookupTable
+  lock screen
+  ResetView
+  RenderView
+  unlock screen
 end dvTree
 
 
