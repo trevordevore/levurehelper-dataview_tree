@@ -1107,6 +1107,10 @@ private command _addBranchToRowToNodeLookup pTreeBranchA, pIndexA, @xRow
     add 1 to tIndex
     add 1 to xRow
 
+    if sNodeIdNodeLookupA[tNodeA["id"]] is an array then
+      throw "duplicate node id in tree:" && tNodeA["id"]
+    end if
+
     put tIndex into pIndexA[tLookupIndex]
 
     put pIndexA into sNodeIdNodeLookupA[tNodeA["id"]]
