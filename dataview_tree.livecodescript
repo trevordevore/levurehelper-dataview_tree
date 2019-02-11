@@ -89,6 +89,20 @@ Summary: Build lookup tables so that `NumberOfRows` can return correct value.
 
 Returns: nothing
 */
+command RefreshViewRows
+  if sRebuildLookupTable then
+    _buildRowToNodeLookup
+    put false into sRebuildLookupTable
+  end if
+  pass RefreshViewRows
+end RefreshViewRows
+
+
+/**
+Summary: Build lookup tables so that `NumberOfRows` can return correct value.
+
+Returns: nothing
+*/
 command RenderView
   if sRebuildLookupTable then
     _buildRowToNodeLookup
