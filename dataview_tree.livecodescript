@@ -57,14 +57,19 @@ distinguish nodes from each other.
 
 Returns: nothing
 */
-setProp dvTree pTreeA
+setProp dvTree[pRender] pTreeA
+  put pRender is not false into pRender
+
   put pTreeA into sTreeA
   _buildRowToNodeLookup
   put false into sRebuildLookupTable
-  lock screen
-  ResetView
-  RenderView
-  unlock screen
+
+  if pRender then
+    lock screen
+    ResetView
+    RenderView
+    unlock screen
+  end if
 end dvTree
 
 
