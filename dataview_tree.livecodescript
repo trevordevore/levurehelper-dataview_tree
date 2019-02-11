@@ -135,8 +135,26 @@ function NumberOfRows
 end NumberOfRows
 
 
+/**
+Summary: Returns the cache key for a given row.
+
+Description:
+The Cache Key for each row is a combination of the `id` property and an
+internal `@version` property. Whenever a property is changed in the node array
+(e.g. the `expanded` state) then the node is marked as dirty and the `@version`
+will be updated, thus changing the cache key for the row. When the cache key
+changes the DataView will redraw the row with the latest data.
+
+Returns: String
+*/
 function CacheKeyForRow pRow
-  return sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["id"]
+  if sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["@dirty"] then
+    add 1 to sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["@version"]
+    put false into sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["@dirty"]
+  end if
+
+  return sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["id"] && \
+        sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["@version"]
 end CacheKeyForRow
 
 
@@ -499,7 +517,7 @@ Description:
 Setting this property will not refresh the DataView.
 */
 setProp dvRowType[pRow] pType
-  put pType into sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["type"]
+  SetValueForKeyInNode sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]], "type", pType
 end dvRowType
 
 
@@ -527,8 +545,7 @@ Description:
 Setting this property will not refresh the DataView.
 */
 setProp dvNodeType[pNodeId] pType
-  put _findNodeOfId(pNodeId, true) into pNodeId
-  put pType into sTreeA[ pNodeId ]["type"]
+  SetValueForKeyInNode pNodeId, "type", pType
 end dvNodeType
 
 
@@ -614,7 +631,7 @@ Description:
 Setting this property will not refresh the DataView.
 */
 setProp dvRowIsLeaf[pRow] pIsLeaf
-  put pIsLeaf is true into sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["is leaf"]
+  SetValueForKeyInNode sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]], "is leaf", pIsLeaf
 end dvRowIsLeaf
 
 
@@ -642,8 +659,7 @@ Description:
 Setting this property will not refresh the DataView.
 */
 setProp dvNodeIsLeaf[pNodeId] pIsLeaf
-  put _findNodeOfId(pNodeId, true) into pNodeId
-  put pIsLeaf is true into sTreeA[ pNodeId ]["is leaf"]
+  SetValueForKeyInNode pNodeId, "is leaf", pIsLeaf
 end dvNodeIsLeaf
 
 
@@ -684,7 +700,7 @@ pNodesA: A numerically indexed array of child node arrays.
 Returns: nothing
 */
 setProp dvRowChildren[pRow] pNodesA
-  put pNodesA into sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["children"]
+  SetValueForKeyInNode sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]], "children", pNodesA
   if sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["expanded"] then
     put true into sRebuildLookupTable
   end if
@@ -719,7 +735,8 @@ setProp dvNodeChildren[pNodeId] pNodesA
 
   if sTreeA[ pNodeId ]["is leaf"] then throw "cannot set children property on a leaf node"
 
-  put pNodesA into sTreeA[ pNodeId ]["children"]
+  SetValueForKeyInNode pNodeId, "children", pNodesA
+
   if sTreeA[ pNodeId ]["expanded"] then
     put true into sRebuildLookupTable
   end if
@@ -812,6 +829,8 @@ Returns: nothing
 command SetValueForKeyInNode pNodeId, pKey, pValue
   if pKey is among the items of kBuiltInProperties then throw pKey && "is not a custom key"
   if pNodeId is not an array then put _findNodeOfId(pNodeId, true) into pNodeId
+
+  put sTreeA[ pNodeId ][pKey] is not pValue into sTreeA[ pNodeId ]["@dirty"]
   put pValue into sTreeA[ pNodeId ][pKey]
   return empty
 end SetValueForKeyInNode
@@ -1160,7 +1179,7 @@ private command _refreshView pTargetRow
   end repeat
 
   lock screen
-  RenderView
+  RefreshViewRows
 
   # update selected rows
   # rows may no longer be available because they are contracted
@@ -1204,7 +1223,10 @@ private command _setExpandedInTreeBranch pTreeBranchA, pIndexA, pBoolean
 
     if sTreeA[pIndexA]["is leaf"] then next repeat
 
-    put pBoolean into sTreeA[pIndexA]["expanded"]
+    if sTreeA[pIndexA]["expanded"] is not pBoolean then
+      put pBoolean into sTreeA[pIndexA]["expanded"]
+      put true into sTreeA[pIndexA]["@dirty"]
+    end if
 
     if sTreeA[pIndexA]["children"] is not empty then
       put "children" into pIndexA[tIndex+1]
@@ -1328,6 +1350,7 @@ private command _setNodeExpandedState pNodeIndexA, pBoolean
   if sTreeA[pNodeIndexA]["expanded"] is not pBoolean then
     if sTreeA[pNodeIndexA]["is leaf"] is not true then
       put pBoolean into sTreeA[pNodeIndexA]["expanded"]
+      put true into sTreeA[pNodeIndexA]["@dirty"]
       put true into sRebuildLookupTable
     end if
   end if
