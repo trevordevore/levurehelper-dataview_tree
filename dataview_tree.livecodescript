@@ -11,6 +11,7 @@ local sRebuildLookupTable = false
 Summary: Sets the tree used to display source tree data.
 
 Parameters:
+pRender: By default the tree will render when setting this property. Pass in false to not render the DataView.
 pTreeA: An array representing tree used to draw the tree in the DataView.
 
 Description:
