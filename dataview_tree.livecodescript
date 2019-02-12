@@ -1317,7 +1317,7 @@ private command _setExpandedInTreeBranch pTreeBranchA, pIndexA, pBoolean
 
     if sTreeA[pIndexA]["children"] is not empty then
       put "children" into pIndexA[tIndex+1]
-      _setExpandedInTreeBranch sTreeA[pIndexA]["children"], pIndexA, pBoolean
+      _setExpandedInTreeBranch sTreeA[pIndexA], pIndexA, pBoolean
       delete variable pIndexA[tIndex+1]
     end if
   end repeat
