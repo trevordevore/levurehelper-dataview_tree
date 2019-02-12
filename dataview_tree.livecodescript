@@ -1457,6 +1457,8 @@ Returns: empty
 private command _showNode pNodeIndexA
   if pNodeIndexA is not an array then throw "invalid node index array"
 
+  put _parentNodeIndex(pNodeIndexA) into pNodeIndexA
+
   repeat while pNodeIndexA is an array
     if not sTreeA[pNodeIndexA]["is leaf"] and not sTreeA[pNodeIndexA]["expanded"] then
       _setNodeExpandedState pNodeIndexA, true
