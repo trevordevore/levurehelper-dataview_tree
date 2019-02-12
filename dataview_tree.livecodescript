@@ -718,7 +718,7 @@ end dvRowChildren
 Summary: Sets the child nodes of a node.
 
 Parameters:
-pRow: The target node id.
+pNodeId: The target node id.
 pNodesA: A numerically indexed array of child node arrays.
 
 Description:
@@ -748,6 +748,31 @@ Returns: Array
 getProp dvNodeChildren[pNodeId]
   return _getNodeProperty(pNodeId, "children")
 end dvNodeChildren
+
+
+/**
+Summary: Returns a list of sibling nodes.
+
+Parameters:
+pNodeId: The target node id.
+
+Description:
+The list contains node pNodeId.
+
+Returns: Array
+*/
+getProp dvNodeSiblings[pNodeId]
+  local tParentIndexA
+
+  put _findNodeOfId(pNodeId, true) into pNodeId
+  put _parentNodeIndex(pNodeId) into tParentIndexA
+
+  if tParentIndexA is an array then
+    return sTreeA[tParentIndexA]["children"]
+  else
+    return empty
+  end if
+end dvNodeSiblings
 
 
 /**
