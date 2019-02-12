@@ -215,35 +215,9 @@ then call `RefreshView` to redraw the view.
 Returns: Nothing
 */
 command SetRowIsExpanded pRow, pLevelsDown, pExpandedState, pRefreshView
-  local tNodeIndexA
-  local tCurrentLevel
-
   if pRow < 1 then throw "invalid row:" && pRow
 
-  put pRefreshView is not false into pRefreshView
-
-  put sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] into tNodeIndexA
-  if sTreeA[tNodeIndexA]["is leaf"] then throw "cannot change expanded setting of a leaf node"
-
-  if pLevelsDown is empty then
-    put 0 into pLevelsDown
-  else if pLevelsDown < 0 then
-    put -1 into pLevelsDown
-  end if
-
-  # Toggle
-  _setNodeExpandedState tNodeIndexA, pExpandedState
-
-  # Affect children
-  if pLevelsDown is not 0 then
-    put 0 into tCurrentLevel
-    _setNodeAncestorExpandedState tNodeIndexA, sTreeA[tNodeIndexA]["expanded"], \
-          pLevelsDown, tCurrentLevel
-  end if
-
-  if pRefreshView then
-    _refreshView
-  end if
+  SetNodeIsExpanded sRowNodeIdLookupA[pRow], pLevelsDown, pExpandedState, pRefreshView
 
   return empty
 end SetRowIsExpanded
@@ -267,22 +241,39 @@ See `SetRowIsExpanded` for more information.
 Returns: empty
 */
 command SetNodeIsExpanded pNode, pLevelsDown, pExpandedState, pRefreshView
-  local tRow
+  local tRow, tNodeIndexA, tCurrentLevel
+
+  put pRefreshView is not false into pRefreshView
+
+  put sNodeIdNodeLookupA[pNode] into tNodeIndexA
+  if tNodeIndexA is not an array then throw "invalid node id"
+  if sTreeA[tNodeIndexA]["is leaf"] then throw "cannot change expanded setting of a leaf node"
+
+  if pLevelsDown is empty then
+    put 0 into pLevelsDown
+  else if pLevelsDown < 0 then
+    put -1 into pLevelsDown
+  end if
 
   if sRebuildLookupTable then
     _buildRowToNodeLookup
     put false into sRebuildLookupTable
   end if
 
-  if pNode is not an array then
-    put _rowOfNode(pNode) into tRow
-  else
-    put _rowOfNode(sTreeA[pNode]["id"]) into tRow
+  # Toggle
+  _setNodeExpandedState tNodeIndexA, pExpandedState
+
+  # Affect children
+  if pLevelsDown is not 0 then
+    put 0 into tCurrentLevel
+    _setNodeAncestorExpandedState tNodeIndexA, sTreeA[tNodeIndexA]["expanded"], \
+          pLevelsDown, tCurrentLevel
   end if
 
-  if tRow > 0 then
-    SetRowIsExpanded tRow, pLevelsDown, pExpandedState, pRefreshView
+  if pRefreshView then
+    _refreshView
   end if
+
   return empty
 end SetNodeIsExpanded
 
@@ -1206,14 +1197,14 @@ Summary: Builds the lookup table used to match nodes to rows.
 Returns: nothing
 */
 private command _buildRowToNodeLookup
-  local tIndex
+  local tRow
 
-  put 0 into tIndex
+  put 0 into tRow
   put empty into sRowNodeIdLookupA
   put empty into sNodeIdNodeLookupA
   put empty into sNodeIdRowLookupA
 
-  _addBranchToRowToNodeLookup sTreeA, empty, tIndex
+  _addBranchToRowToNodeLookup sTreeA, empty, tRow, true
 
   return empty
 end _buildRowToNodeLookup
@@ -1224,30 +1215,34 @@ Summary: Adds a branch of sTreeA to the lookup table.
 
 Returns: nothing
 */
-private command _addBranchToRowToNodeLookup pTreeBranchA, pIndexA, @xRow
-  local tLookupIndex, tIndex, tNodeA
+private command _addBranchToRowToNodeLookup pTreeBranchA, pIndexA, @xRow, pBranchIsVisible
+  local tLookupIndex, tIndex, tNodeA, tChildrenAreVisible
 
   put the number of elements of pIndexA + 1 into tLookupIndex
 
   repeat for each element tNodeA in pTreeBranchA
-    add 1 to tIndex
-    add 1 to xRow
-
     if sNodeIdNodeLookupA[tNodeA["id"]] is an array then
       throw "duplicate node id in tree:" && tNodeA["id"]
     end if
 
+    add 1 to tIndex
     put tIndex into pIndexA[tLookupIndex]
-
     put pIndexA into sNodeIdNodeLookupA[tNodeA["id"]]
-    put tNodeA["id"] into sRowNodeIdLookupA[xRow]
-    put xRow into sNodeIdRowLookupA[tNodeA["id"]]
+
+    if pBranchIsVisible then
+      add 1 to xRow
+      put tNodeA["id"] into sRowNodeIdLookupA[xRow]
+      put xRow into sNodeIdRowLookupA[tNodeA["id"]]
+    end if
 
     if tNodeA["expanded"] is empty then put false into tNodeA["expanded"]
 
-    if not tNodeA["is leaf"] and tNodeA["expanded"] and the number of elements of tNodeA["children"] > 0 then
+    if not tNodeA["is leaf"] and the number of elements of tNodeA["children"] > 0 then
       put "children" into pIndexA[tLookupIndex+1]
-      _addBranchToRowToNodeLookup tNodeA["children"], pIndexA, xRow
+      put pBranchIsVisible and tNodeA["expanded"] into tChildrenAreVisible
+
+      _addBranchToRowToNodeLookup tNodeA["children"], pIndexA, xRow, tChildrenAreVisible
+
       delete local pIndexA[tLookupIndex+1]
     end if
   end repeat
