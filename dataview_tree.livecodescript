@@ -267,17 +267,22 @@ See `SetRowIsExpanded` for more information.
 Returns: empty
 */
 command SetNodeIsExpanded pNode, pLevelsDown, pExpandedState, pRefreshView
-  if pNode is not an array then put _findNodeOfId(pNode, true) into pNode
-
-  # Make sure node is visible
-  _showNode pNode
+  local tRow
 
   if sRebuildLookupTable then
     _buildRowToNodeLookup
     put false into sRebuildLookupTable
   end if
 
-  SetRowIsExpanded _rowOfNode(pNode), pLevelsDown, pExpandedState, pRefreshView
+  if pNode is not an array then
+    put _rowOfNode(pNode) into tRow
+  else
+    put _rowOfNode(sTreeA[pNode]["id"]) into tRow
+  end if
+
+  if tRow > 0 then
+    SetRowIsExpanded tRow, pLevelsDown, pExpandedState, pRefreshView
+  end if
   return empty
 end SetNodeIsExpanded
 
