@@ -148,13 +148,7 @@ changes the DataView will redraw the row with the latest data.
 Returns: String
 */
 function CacheKeyForRow pRow
-  if sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["@dirty"] then
-    add 1 to sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["@version"]
-    put false into sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["@dirty"]
-  end if
-
-  return sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["id"] && \
-        sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["@version"]
+  return sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["id"]
 end CacheKeyForRow
 
 
@@ -517,7 +511,7 @@ Description:
 Setting this property will not refresh the DataView.
 */
 setProp dvRowType[pRow] pType
-  SetValueForKeyInNode sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]], "type", pType
+  _setNodeProperty sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]], "type", pType
 end dvRowType
 
 
@@ -545,7 +539,7 @@ Description:
 Setting this property will not refresh the DataView.
 */
 setProp dvNodeType[pNodeId] pType
-  SetValueForKeyInNode pNodeId, "type", pType
+  _setNodeProperty pNodeId, "type", pType
 end dvNodeType
 
 
@@ -631,7 +625,7 @@ Description:
 Setting this property will not refresh the DataView.
 */
 setProp dvRowIsLeaf[pRow] pIsLeaf
-  SetValueForKeyInNode sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]], "is leaf", pIsLeaf
+  _setNodeProperty sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]], "is leaf", pIsLeaf
 end dvRowIsLeaf
 
 
@@ -659,7 +653,7 @@ Description:
 Setting this property will not refresh the DataView.
 */
 setProp dvNodeIsLeaf[pNodeId] pIsLeaf
-  SetValueForKeyInNode pNodeId, "is leaf", pIsLeaf
+  _setNodeProperty pNodeId, "is leaf", pIsLeaf
 end dvNodeIsLeaf
 
 
@@ -700,7 +694,7 @@ pNodesA: A numerically indexed array of child node arrays.
 Returns: nothing
 */
 setProp dvRowChildren[pRow] pNodesA
-  SetValueForKeyInNode sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]], "children", pNodesA
+  _setNodeProperty sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]], "children", pNodesA
   if sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["expanded"] then
     put true into sRebuildLookupTable
   end if
@@ -735,7 +729,7 @@ setProp dvNodeChildren[pNodeId] pNodesA
 
   if sTreeA[ pNodeId ]["is leaf"] then throw "cannot set children property on a leaf node"
 
-  SetValueForKeyInNode pNodeId, "children", pNodesA
+  _setNodeProperty pNodeId, "children", pNodesA
 
   if sTreeA[ pNodeId ]["expanded"] then
     put true into sRebuildLookupTable
@@ -754,6 +748,42 @@ Returns: Array
 getProp dvNodeChildren[pNodeId]
   return _getNodeProperty(pNodeId, "children")
 end dvNodeChildren
+
+
+/**
+Summary: Sets the dirty flag of the row control associated with the node.
+
+Parameters:
+pNodeId: The target node id.
+pIsDirty: Boolean.
+
+Description:
+This handler calls the dvRowIsDirty method of the DataView if a control is
+associated with the node.
+*/
+setProp dvNodeIsDirty[pNodeId] pIsDirty
+  _setNodeRowIsDirty pNodeId, pIsDirty
+end dvNodeIsDirty
+
+
+/**
+Summary: Returns the dvRowIsDirty property of the row control associated with a node.
+
+Parameters:
+pNode: The target node id.
+
+Description:
+If no row control is associated with the node then `false` is always returned.
+
+Returns: Boolean
+*/
+getProp dvNodeIsDirty[pNodeId]
+  if sNodeIdRowLookupA[pNodeId] is an integer then
+    return the dvRowIsDirty[sNodeIdRowLookupA[pNodeId]] of me
+  else
+    return false
+  end if
+end dvNodeIsDirty
 
 
 /**
@@ -790,7 +820,7 @@ not one of the built-in properties `id`, `type`, `expanded`, `is leaf`, `childre
 Returns: nothing
 */
 command SetValueForKeyInRow pRow, pKey, pValue
-  SetValueForKeyInNode sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]], pKey, pValue
+  _setNodeProperty sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]], pKey, pValue
   return empty
 end SetValueForKeyInRow
 
@@ -828,12 +858,25 @@ Returns: nothing
 */
 command SetValueForKeyInNode pNodeId, pKey, pValue
   if pKey is among the items of kBuiltInProperties then throw pKey && "is not a custom key"
-  if pNodeId is not an array then put _findNodeOfId(pNodeId, true) into pNodeId
-
-  put sTreeA[ pNodeId ][pKey] is not pValue into sTreeA[ pNodeId ]["@dirty"]
-  put pValue into sTreeA[ pNodeId ][pKey]
+  _setNodeProperty pNodeId, pKey, pValue
   return empty
 end SetValueForKeyInNode
+
+
+private command _setNodeProperty pNodeId, pKey, pValue
+  if pNodeId is not an array then put _findNodeOfId(pNodeId, true) into pNodeId
+
+  _setNodeRowIsDirty pNodeId, sTreeA[ pNodeId ][pKey] is not pValue
+  put pValue into sTreeA[ pNodeId ][pKey]
+  return empty
+end _setNodeProperty
+
+
+private command _setNodeRowIsDirty pNodeId, pIsDirty
+  if sNodeIdRowLookupA[pNodeId] is an integer then
+    set the dvRowIsDirty[sNodeIdRowLookupA[pNodeId]] of me to pIsDirty
+  end if
+end _setNodeRowIsDirty
 
 
 /**
@@ -1225,7 +1268,7 @@ private command _setExpandedInTreeBranch pTreeBranchA, pIndexA, pBoolean
 
     if sTreeA[pIndexA]["expanded"] is not pBoolean then
       put pBoolean into sTreeA[pIndexA]["expanded"]
-      put true into sTreeA[pIndexA]["@dirty"]
+      _setNodeRowIsDirty sTreeA[pIndexA]["id"], true
     end if
 
     if sTreeA[pIndexA]["children"] is not empty then
@@ -1350,7 +1393,7 @@ private command _setNodeExpandedState pNodeIndexA, pBoolean
   if sTreeA[pNodeIndexA]["expanded"] is not pBoolean then
     if sTreeA[pNodeIndexA]["is leaf"] is not true then
       put pBoolean into sTreeA[pNodeIndexA]["expanded"]
-      put true into sTreeA[pNodeIndexA]["@dirty"]
+      _setNodeRowIsDirty sTreeA[pNodeIndexA]["id"], true
       put true into sRebuildLookupTable
     end if
   end if
