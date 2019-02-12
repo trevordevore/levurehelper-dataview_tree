@@ -223,7 +223,7 @@ command SetRowIsExpanded pRow, pLevelsDown, pExpandedState, pRefreshView
   put pRefreshView is not false into pRefreshView
 
   put sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] into tNodeIndexA
-  if sTreeA[tNodeIndexA]["is leaf"] then throw "cannot expand a leaf node"
+  if sTreeA[tNodeIndexA]["is leaf"] then throw "cannot change expanded setting of a leaf node"
 
   if pLevelsDown is empty then
     put 0 into pLevelsDown
