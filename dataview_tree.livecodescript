@@ -690,6 +690,20 @@ end dvRowChildCount
 
 
 /**
+Summary: Returns the number of children that a node has.
+
+Returns: Integer
+*/
+getProp dvNodeChildCount[pNodeId]
+  if not sTreeA[ sNodeIdNodeLookupA[pNodeId] ]["is leaf"] then
+    return the number of elements of sTreeA[ sNodeIdNodeLookupA[pNodeId] ]["children"]
+  else
+    return 0
+  end if
+end dvNodeChildCount
+
+
+/**
 Summary: Sets the child nodes of a row.
 
 Parameters:
