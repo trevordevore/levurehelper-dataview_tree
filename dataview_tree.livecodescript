@@ -1132,15 +1132,24 @@ If any ids in `pIds` is not currently associated with a row then the tree
 will be expanded to show it.
 
 Note that if your ids have a "," in them then this property won't work correctly.
+
+Returns: Comma-delimited list of ids that had their expanded state changed.
 */
 setProp dvHilitedIds[pForceScroll] pIds
   local tId, tNodeIndexA, tRows
+  local tModifiedNodesA, tModifiedNodeIdsA, tModifiedNodeIds
 
   repeat for each item tId in pIds
     if sNodeIdRowLookupA[tId] is empty then
       put _findNodeOfId(tId, false) into tNodeIndexA
       if tNodeIndexA is an array then
         _showNode tNodeIndexA
+        put it into tModifiedNodesA
+
+        # Store list of ids that had expanded state changed
+        repeat for each element tNodeIndexA in tModifiedNodesA
+          put empty into tModifiedNodeIdsA[sTreeA[tNodeIndexA]["id"]]
+        end repeat
       end if
     end if
   end repeat
@@ -1156,7 +1165,12 @@ setProp dvHilitedIds[pForceScroll] pIds
   end repeat
   delete the last char of tRows
 
+  put the keys of tModifiedNodeIdsA into tModifiedNodeIds
+  replace cr with "," in tModifiedNodeIds
+
   set the dvHilitedRow[pForceScroll] of me to tRows
+
+  return tModifiedNodeIds
 end dvHilitedIds
 
 
@@ -1447,9 +1461,11 @@ Summary: Expands any tree nodes necessary so that the node can be seen.
 Parameters:
 pNodeIndexA: The node index array.
 
-Returns: empty
+Returns: Array of node indexes that were expanded.
 */
 private command _showNode pNodeIndexA
+  local tModifiedNodesA
+
   if pNodeIndexA is not an array then throw "invalid node index array"
 
   put _parentNodeIndex(pNodeIndexA) into pNodeIndexA
@@ -1457,11 +1473,12 @@ private command _showNode pNodeIndexA
   repeat while pNodeIndexA is an array
     if not sTreeA[pNodeIndexA]["is leaf"] and not sTreeA[pNodeIndexA]["expanded"] then
       _setNodeExpandedState pNodeIndexA, true
+      put pNodeIndexA into tModifiedNodesA[the number of elements of tModifiedNodesA + 1]
     end if
     put _parentNodeIndex(pNodeIndexA) into pNodeIndexA
   end repeat
 
-  return empty
+  return tModifiedNodesA for value
 end _showNode
 
 
