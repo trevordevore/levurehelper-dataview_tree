@@ -563,6 +563,30 @@ end RefreshView
 
 
 /**
+Summary: Hide the treeline widget before creating the drag image for a row control.
+
+Returns: nothing
+*/
+command PreDragImageSnapshot
+  if there is a widget "TreeLines" of the target then
+    set the visible of widget "TreeLines" of the target to false
+  end if
+end PreDragImageSnapshot
+
+
+/**
+Summary: Show the treeline widget after creating the drag image for a row control.
+
+Returns: nothing
+*/
+command PostDragImageSnapshot
+  if there is a widget "TreeLines" of the target then
+    set the visible of widget "TreeLines" of the target to true
+  end if
+end PostDragImageSnapshot
+
+
+/**
 Summary: Expands all rows in the tree.
 
 Description:
