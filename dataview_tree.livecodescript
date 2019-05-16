@@ -518,6 +518,7 @@ command DataForRow pRow, @rData, @rTemplateStyle
 
   put _nodeLevel(tIndexA) into tNodeA["level"]
   put the number of elements of sTreeA[ tIndexA ]["children"] into tNodeA["child count"]
+  put _nodeTreeLineStyles(tIndexA, tNodeA["level"]) into tNodeA["tree line styles"]
 
   dispatch "DataForNode" with tNodeA, pRow, rData, rTemplateStyle
 end DataForRow
@@ -1532,8 +1533,7 @@ end dvRowDescendantNodes
 Summary: Returns index arrays that point to the descendants of a node.
 
 Parameters:
-pNode: The node `id`.
-pOnlyVisible: Pass in true to only return the visible descendant elements. Default is `false`.
+pNodeId: The node `id`.
 
 Returns: Numerically indexed array of index arrays
 */
@@ -1541,6 +1541,28 @@ getProp dvNodeDescendantNodes[pNodeId]
   put _findNodeOfId(pNodeId, true) into pNodeId
   return _descendantElements(pNodeId, false)
 end dvNodeDescendantNodes
+
+
+/**
+Summary: Returns the style of tree line to draw at each level for a particular node.
+
+Returns: Comma-delimited list. Items can be empty, `child`, `last child`, `relative`, or `children`.
+*/
+getProp dvNodeTreeLineStyles[pNodeId]
+  put _findNodeOfId(pNodeId, true) into pNodeId
+  return _nodeTreeLineStyles(pNodeId, _nodeLevel(pNodeId))
+end dvNodeTreeLineStyles
+
+
+
+/**
+Summary: Returns the style of tree line to draw at each level for a particular row.
+
+Returns: Comma-delimited list. Items can be empty, `child`, `last child`, `relative`, or `children`.
+*/
+getProp dvRowTreeLineStyles[pRow]
+  return the dvNodeTreeLineStyles[sRowNodeIdLookupA[pRow]] of me
+end dvRowTreeLineStyles
 
 
 /**
@@ -2059,6 +2081,10 @@ Summary: Returns index arrays pointing to ancestors of a node.
 Parameters:
 pNodeIndexA: The node index array.
 
+Description:
+Key `1` is the index array to the parent. The last key is the index array
+of the most distant ancestor.
+
 Returns: Numerically indexed array of index arrays
 */
 private function _ancestorElements pNodeIndexA
@@ -2069,7 +2095,8 @@ private function _ancestorElements pNodeIndexA
   repeat forever
     if pNodeIndexA[tIndexCount-1] is "children" and pNodeIndexA[tIndexCount-2] is not "root" then
       delete variable pNodeIndexA[tIndexCount]
-      delete variable pNodeIndexA[tIndexCount]
+      delete variable pNodeIndexA[tIndexCount-1]
+      subtract 2 from tIndexCount
 
       add 1 to i
       put pNodeIndexA into tAncestorsA[i]
@@ -2081,3 +2108,129 @@ private function _ancestorElements pNodeIndexA
 
   return tAncestorsA
 end _ancestorElements
+
+
+/**
+Summary: Returns a list of styles for each level leading up to and including the node.
+
+Parameters:
+pNodeIndexA: The target node index lookup array.
+pNodeLevel: The level of the node. DataForRow will already calculate this so it saves a lookup.
+
+Description:
+When drawing a tree line showing hierarchal relationships each row will draw a line
+for each level represented in the row. For example, if pNodeIndexA points to a node
+at level 4 then the list returned will have 4 items. Drawing code can then render these
+styles in the chosen manner.
+
+Returns: comma-delimited list. Items can be empty, `child`, last child`, `relative`, or `children`.
+*/
+private function _nodeTreeLineStyles pNodeIndexA, pNodeLevel
+  local tAncestorsA, i, tLevel, tLineStyles, tHasChildren
+  local tIndexA, tParentIndexA
+
+  put _ancestorElements(pNodeIndexA) into tAncestorsA
+
+  put the number of elements of sTreeA[pNodeIndexA]["children"] > 0 into tHasChildren
+  if tHasChildren then
+    put "children" into tLineStyles
+  else
+    put "" into tLineStyles
+  end if
+
+  # The setting for each level is dependent on that child node state. So pNodeIndexA's state
+  # determines the settings for pNodeLevel-1
+  put pNodeLevel-1 into tLevel
+  if tLevel > 0 then
+    put _getLineStyleInfoForNode(pNodeIndexA, tLevel, pNodeLevel) & "," before tLineStyles
+
+    # Ancestor array starts with parent
+    repeat for each element tIndexA in tAncestorsA
+      subtract 1 from tLevel
+      if tLevel > 0 then
+        put _getLineStyleInfoForNode(tIndexA, tLevel, pNodeLevel) & "," before tLineStyles
+      end if
+    end repeat
+  end if
+
+  return tLineStyles
+end _nodeTreeLineStyles
+
+
+/**
+Summary: Returns the tree line style for a given node.
+
+Parameters:
+pIndexA: The node index lookup array.
+pLevel: The level of the node.
+pAnchorLevel: The level of anchor node.
+
+Returns: empty, `relative`, `child`, or `last child`
+*/
+private function _getLineStyleInfoForNode pIndexA, pLevel, pAnchorLevel
+  local tSiblingInfo, tSiblingOrder, tChildCount
+  local tLineStyle
+
+  /*
+  Questions to ask at each level
+  1. Is node the parent of the anchor level?
+    Y. Is it 'last child' or 'relative'?
+    N. Does node have a child that appears AFTER anchor node?
+      Y. 'child'
+      N. empty
+  */
+  if pLevel is pAnchorLevel - 1 then
+    put _siblingInfo(pIndexA) into tSiblingInfo
+    put item 1 of tSiblingInfo into tSiblingOrder
+    put item 2 of tSiblingInfo into tChildCount
+
+    if tSiblingOrder is tChildCount then
+      put "last child" into tLineStyle
+    else
+      put "child" into tLineStyle
+    end if
+  else
+    put _siblingInfo(pIndexA) into tSiblingInfo
+    put item 1 of tSiblingInfo into tSiblingOrder
+    put item 2 of tSiblingInfo into tChildCount
+
+    if tSiblingOrder is tChildCount then
+      put empty into tLineStyle
+    else
+      put "relative" into tLineStyle
+    end if
+  end if
+
+  return tLineStyle
+end _getLineStyleInfoForNode
+
+
+/**
+Summary: Returns the sibling order and total number of siblings.
+
+Parameters:
+pNodeIndexA: The index lookup array for the node.
+
+Description:
+The first item in the list is the sibling order. The second item is
+the total number of siblings.
+
+Returns: Comma-delimited list
+*/
+private function _siblingInfo pNodeIndexA
+  local tSiblingOrder, tParentIndexA, tChildCount
+
+  put pNodeIndexA[the number of elements of pNodeIndexA] into tSiblingOrder
+
+  # total number of siblings
+  if the number of elements of pNodeIndexA > 1 then
+    put pNodeIndexA into tParentIndexA
+    delete local tParentIndexA[the number of elements of tParentIndexA]
+    delete local tParentIndexA[the number of elements of tParentIndexA]
+    put the number of elements of sTreeA[tParentIndexA]["children"] into tChildCount
+  else
+    put the number of elements of sTreeA into tChildCount
+  end if
+
+  return tSiblingOrder,tChildCount
+end _siblingInfo

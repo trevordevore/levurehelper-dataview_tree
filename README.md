@@ -16,7 +16,7 @@ https://github.com/trevordevore/dataview_demo
 
 In order to use the DataView Tree helper you must do two things:
 
-1. Assign the behavior of your DataView control to `stack "DataView Tree Behavior"`. If you are already using a custom behavior with your DataView then assign the behavior __of your custom behavior__ to `stack "DataView Tree Behavior"` 
+1. Assign the behavior of your DataView control to `stack "DataView Tree Behavior"`. If you are already using a custom behavior with your DataView then assign the behavior __of your custom behavior__ to `stack "DataView Tree Behavior"`
 2. Create an array in the specified format and assign it to the `dvTree` property of the DataView.
 3. Create one or more templates to display types of nodes in the tree.
 4. Implement the `DataForNode` message in order to feed the tree data as needed.
@@ -69,7 +69,7 @@ pTreeA[2]["children"]
 
 ## Feeding data to a DataView Tree
 
-A standard DataView sends the `DataForRow` message. Usually there is a 1-1 mapping of data from your data source to the rows displayed in the DataView. In a tree the 1-1 mapping doesn't usually exist as a node can be collapsed which hides it's children in the UI. 
+A standard DataView sends the `DataForRow` message. Usually there is a 1-1 mapping of data from your data source to the rows displayed in the DataView. In a tree the 1-1 mapping doesn't usually exist as a node can be collapsed which hides it's children in the UI.
 
 Instead, a DataView Tree sends the `DataForNode` message. Your code must handle the `DataForNode` message in order to feed data to the DataView Tree for display. It looks very similar to the `DataForRow` message that a normal DataView receives but has one additional parameters – `pNodeA`. `pNodeA` contains the following keys:
 
@@ -79,12 +79,21 @@ Instead, a DataView Tree sends the `DataForNode` message. Your code must handle 
 - `is leaf`
 - `level`
 - `child count`
+- `tree line styles`
 
 ```
 command DataForNode pNodeA, pRow, @rDataA, @rTemplateStyle
-  # Use pNodeA["id"] to locate data in your data ource to feed to rData...
-  # Assign values to keys in rDataA 
+  # Use pNodeA["id"] to locate additional data in your data source to feed to rData...
+
+  # Move any values from pNodeA into rDataA that your row template may require
+  # For example:
+  put pNodeA["expanded"] into rDataA["expanded"]
+  put pNodeA["level"] into rDataA["level"]
+  put pNodeA["child count"] into rDataA["child count"]
+  put pNodeA["tree line styles"] into rDataA["tree line styles"]
+
   # Specify the row template style to use in rTemplateStyle
+  put "my style" into rTemplateStyle
 end DataForNode
 ```
 
@@ -92,6 +101,25 @@ You can use the `pNodeA["id"]` value to locate the data in your data source that
 
 ### NumberOfRows() and CacheKeyForRow()
 You do not need to worry about defining `NumberOfRows()` or `CacheKeyForRow()`. Both of these functions are defined in the DataView Tree behavior. The behavior returns the node `id` property in the `CacheKeyForRow()` function.
+
+## Adding tree lines to your row template
+
+The `pNodeA` parameter that is passed to `DataForNode` contains a `tree line styles` key. This is a comma-delimited list of styles that should be displayed at each level present in the row. For example, a row that displays a level 4 node would have four items in the list. Items can be one of the following values:
+
+- empty: do not display any line at that level.
+- `relative`: The node at this level has children that appear after this row. Display a vertical line at that level.
+- `child`: The node at this level is a child. Display a vertical line with a hash mark coming out of right.
+- `last child`: The node at this level is the last child. Display a vertical line that originates at the top of the rowl, is half the height of the row, and has a hash mark coming out of the right.
+- `children`: This level is a parent node with children. Display a vertical line that originates in the middle of the row and extends to the bottom of the row.
+
+The DataView Tree helper comes with an extension that will draw the appropriate lines using this list. The widget id is `community.livecode.trevordevore.treelines` and is automatically loaded along with the rest of the helper files.
+
+To use the widget to display tree lines in your tree perform the following steps:
+
+1. Add the widget to your row template(s). `create widget "TreeLines" as "community.livecode.trevordevore.treelines"`. Layer it behind everything except for the "Background" graphic. Set the coordinates to the topleft of the row template group. The width and height do not matter at this point.
+2. Configure the `lineColor`, `lineInset` and `lineSpacing` properties of the widget. You can set the `lineStyles` of the widget to a list of values to see what each style looks like For example, `relative,relative,empty,child,last child,children`.
+3. In the `FillInData` handler of your row template set the `lineStyles` property: `set the lineStyles of widget "TreeLines" of me to pDataA["tree line styles"]`. Important: Make sure that you copy the `tree line styles` key from `pNodeA` to `rDataA` in the `DataForNode` handler.
+4. In the `LayoutControl` message set the width and height to fill the entire row control.
 
 ## Accessing node and row properties in the tree
 

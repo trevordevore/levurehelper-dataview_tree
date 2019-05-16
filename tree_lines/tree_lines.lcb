@@ -1,0 +1,144 @@
+widget community.livecode.trevordevore.treelines
+
+  use com.livecode.widget
+  use com.livecode.canvas
+  use com.livecode.engine
+  use com.livecode.library.widgetutils
+
+  metadata title is "Tree Lines"
+  metadata author is "Trevor DeVore"
+  metadata version is "1.0.0"
+
+
+  private variable mLineColor       as Color
+  private variable mLineWidth       as Number
+  private variable mLineInset       as Number
+  private variable mLineStyles      as List
+  private variable mLineSpacing     as Number
+  private variable mLinePath        as Path
+
+  property lineColor                get getLineColor      set setLineColor
+  property lineInset                get mLineInset        set setLineInset
+  property lineStyles               get getLevelStyles    set setLevelStyles
+  property lineSpacing              get mLineSpacing      set setLineSpacing
+
+  metadata lineColor.editor         is "com.livecode.pi.color"
+
+  public handler OnCreate()
+    put [] into mLineStyles
+    put color [150/255,150/255,150/255] into mLineColor
+    put 1 into mLineWidth
+    put 10 into mLineInset
+    put 20 into mLineSpacing
+
+    calculatePaths()
+  end handler
+
+
+  public handler OnSave(out rProperties as Array)
+    put the empty array into rProperties
+
+    put colorToString(mLineColor, true) into rProperties["lineColor"]
+    put mLineInset into rProperties["lineInset"]
+    put mLineStyles into rProperties["lineStyles"]
+    put mLineSpacing into rProperties["lineSpacing"]
+  end handler
+
+
+  public handler OnLoad(in pProperties as Array)
+    put stringToColor(pProperties["lineColor"]) into mLineColor
+    put pProperties["lineInset"] into mLineInset
+    put pProperties["lineStyles"] into mLineStyles
+    put pProperties["lineSpacing"] into mLineSpacing
+  end handler
+
+
+  public handler OnGeometryChanged()
+    calculatePaths()
+  end handler
+
+
+  public handler OnPaint()
+    set the paint of this canvas to solid paint with mLineColor
+    set the stroke width of this canvas to mLineWidth
+    set the cap style of this canvas to "square"
+    stroke mLinePath on this canvas
+  end handler
+
+
+  private handler calculatePaths()
+    variable tStyle as String
+    variable tLevel as Integer
+    variable tHeight as Number
+    variable tX as Number
+
+    put the empty path into mLinePath
+    put my height into tHeight
+
+    // Move to center of first level
+    put mLineInset + mLineSpacing/2 into tX
+    move to point [tX,0] on mLinePath
+
+    repeat for each element tStyle in mLineStyles
+      add 1 to tLevel
+
+      if tStyle is "relative" then
+        line to point [tX, tHeight] on mLinePath
+
+      else if tStyle is "last child" then
+        line to point [tX,tHeight/2] on mLinePath
+        line to point [tX+mLineSpacing,tHeight/2] on mLinePath
+
+      else if tStyle is "child" then
+        line to point [tX,tHeight] on mLinePath
+        move to point [tX,tHeight/2] on mLinePath
+        line to point [tX+mLineSpacing,tHeight/2] on mLinePath
+
+      else if tStyle is "children" then
+        move to point [tX,tHeight/2] on mLinePath
+        line to point [tX,tHeight] on mLinePath
+      end if
+
+      put mLineInset + mLineSpacing/2 + (mLineSpacing * tLevel) into tX
+      move to point [tX,0] on mLinePath
+    end repeat
+  end handler
+
+
+  private handler getLineColor() returns String
+    return colorToString(mLineColor, false)
+  end handler
+
+  private handler setLineColor(in pColor as String)
+    put stringToColor(pColor) into mLineColor
+    redraw all
+  end handler
+
+
+  private handler setLineInset(in pLineInset as Number)
+    put pLineInset into mLineInset
+    calculatePaths()
+    redraw all
+  end handler
+
+
+  private handler getLevelStyles() returns String
+    variable tString as String
+    combine mLineStyles with "," into tString
+    return tString
+  end handler
+
+  private handler setLevelStyles(in pLevelStyles as String)
+    split pLevelStyles by "," into mLineStyles
+    calculatePaths()
+    redraw all
+  end handler
+
+
+  private handler setLineSpacing(in pSpacing as Number)
+    put pSpacing into mLineSpacing
+    calculatePaths()
+    redraw all
+  end handler
+
+end widget
