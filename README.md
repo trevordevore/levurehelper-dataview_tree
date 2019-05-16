@@ -116,7 +116,7 @@ The DataView Tree helper comes with an extension that will draw the appropriate 
 
 To use the widget to display tree lines in your tree perform the following steps:
 
-1. Add the widget to your row template(s). `create widget "TreeLines" as "community.livecode.trevordevore.treelines"`. Layer it behind everything except for the "Background" graphic. Set the coordinates to the topleft of the row template group. The width and height do not matter at this point.
+1. Add the widget to your row template(s). `create widget "TreeLines" as "community.livecode.trevordevore.treelines"`. **Disable** the new widget and layer it behind everything except for the "Background" graphic. Set the coordinates to the topleft of the row template group. The width and height do not matter at this point.
 2. Configure the `lineColor`, `lineInset` and `lineSpacing` properties of the widget. You can set the `lineStyles` of the widget to a list of values to see what each style looks like For example, `relative,relative,empty,child,last child,children`.
 3. In the `FillInData` handler of your row template set the `lineStyles` property: `set the lineStyles of widget "TreeLines" of me to pDataA["tree line styles"]`. Important: Make sure that you copy the `tree line styles` key from `pNodeA` to `rDataA` in the `DataForNode` handler.
 4. In the `LayoutControl` message set the width and height to fill the entire row control.
