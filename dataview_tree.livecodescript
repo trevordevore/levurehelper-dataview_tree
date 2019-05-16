@@ -955,13 +955,13 @@ If pRow is the third child of it's parent then this property would return `3`.
 
 Returns: Integer
 */
-getProp dvRowPositionAmongSiblings[pRow]
+getProp dbRowSiblingOrder[pRow]
   local tNodeIndexA
 
-  # The numerically index is sibling position.
+  # The index is sibling position.
   put sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] into tNodeIndexA
   return tNodeIndexA[the number of elements of tNodeIndexA]
-end dvRowPositionAmongSiblings
+end dbRowSiblingOrder
 
 
 /**
