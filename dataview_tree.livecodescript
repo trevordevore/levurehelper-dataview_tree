@@ -2155,7 +2155,7 @@ private function _nodeTreeLineStyles pNodeIndexA, pNodeLevel
 
   put _ancestorElements(pNodeIndexA) into tAncestorsA
 
-  put the number of elements of sTreeA[pNodeIndexA]["children"] > 0 into tHasChildren
+  put the number of elements of sTreeA[pNodeIndexA]["children"] > 0 and sTreeA[pNodeIndexA]["expanded"] into tHasChildren
   if tHasChildren then
     put "children" into tLineStyles
   else
