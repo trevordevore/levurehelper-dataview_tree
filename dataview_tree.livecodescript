@@ -518,7 +518,9 @@ command DataForRow pRow, @rData, @rTemplateStyle
 
   put _nodeLevel(tIndexA) into tNodeA["level"]
   put the number of elements of sTreeA[ tIndexA ]["children"] into tNodeA["child count"]
-  put _nodeTreeLineStyles(tIndexA, tNodeA["level"]) into tNodeA["tree line styles"]
+
+  # Cache for future use
+  put _nodeTreeLineStyles(tIndexA, tNodeA["level"]) into sTreeA[ tIndexA ]["tree line styles"]
 
   dispatch "DataForNode" with tNodeA, pRow, rData, rTemplateStyle
 end DataForRow
@@ -1568,28 +1570,6 @@ end dvNodeDescendantNodes
 
 
 /**
-Summary: Returns the style of tree line to draw at each level for a particular node.
-
-Returns: Comma-delimited list. Items can be empty, `child`, `last child`, `relative`, or `children`.
-*/
-getProp dvNodeTreeLineStyles[pNodeId]
-  put _findNodeOfId(pNodeId, true) into pNodeId
-  return _nodeTreeLineStyles(pNodeId, _nodeLevel(pNodeId))
-end dvNodeTreeLineStyles
-
-
-
-/**
-Summary: Returns the style of tree line to draw at each level for a particular row.
-
-Returns: Comma-delimited list. Items can be empty, `child`, `last child`, `relative`, or `children`.
-*/
-getProp dvRowTreeLineStyles[pRow]
-  return the dvNodeTreeLineStyles[sRowNodeIdLookupA[pRow]] of me
-end dvRowTreeLineStyles
-
-
-/**
 Summary: Returns the `id` property of the selected row(s).
 
 Description:
@@ -1700,6 +1680,167 @@ getProp dvHilitedData
     return tDataA
   end if
 end dvHilitedData
+
+
+/**
+Summary: Returns the style of tree line to draw at each level for a particular node.
+
+Returns: Comma-delimited list. Items can be empty, `child`, `last child`, `relative`, or `children`.
+*/
+getProp dvNodeTreeLineStyles[pNodeId]
+  put _findNodeOfId(pNodeId, true) into pNodeId
+  return _nodeTreeLineStyles(pNodeId, _nodeLevel(pNodeId))
+end dvNodeTreeLineStyles
+
+
+
+/**
+Summary: Returns the style of tree line to draw at each level for a particular row.
+
+Returns: Comma-delimited list. Items can be empty, `child`, `last child`, `relative`, or `children`.
+*/
+getProp dvRowTreeLineStyles[pRow]
+  return the dvNodeTreeLineStyles[sRowNodeIdLookupA[pRow]] of me
+end dvRowTreeLineStyles
+
+
+/**
+Summary: Renders the tree lines in an image object.
+
+Parameters:
+pRow: The row that the image object is associated with.
+pRGBA: Optional Red, Green, Blue, Alpha values. If empty then the backgroundColor of the image will be used.
+
+Description:
+`dispatch` this message to an image object in a row control to draw the tree lines
+
+Returns: nothing
+*/
+command RenderTreeLines pRow, pRGBA
+  local tNodeId, tInset, tSpacing, tStyles
+  local tRect, tWidth
+
+  if the number of items of pRGBA is 3 then put ",255" after pRGBA
+
+  if pRow is empty then
+    put the dvRow of the dvRowControl of the target into pRow
+  end if
+
+  put sRowNodeIdLookupA[pRow] into tNodeId
+
+  put the viewProp["line inset"] of me into tInset
+  put the viewProp["line spacing"] of me into tSpacing
+  put sTreeA[ sNodeIdNodeLookupA[tNodeId] ]["tree line styles"] into tStyles
+
+  put tInset + tSpacing * the number of items of tStyles into tWidth
+  put the rect of the target into tRect
+  put item 1 of tRect + tWidth into item 3 of tRect
+
+  set the rect of the target to tRect
+  set the text of the target to _renderTreeLines(tInset, \
+        tSpacing, \
+        sTreeA[ sNodeIdNodeLookupA[tNodeId] ]["tree line styles"], \
+        tWidth, \
+        the height of the target, \
+        pRGBA)
+end RenderTreeLines
+
+
+/**
+Summary: Helper function for rendering a drawing representing tree line styles.
+
+Parameters:
+pLineInset: Distance from left of image to start calculations.
+pLineSpacing: Distance between each level of lines.
+pLineStyles: Comma-delimited list of line styles for each level. Items can be empty, `child`, `last child`, `relative`, or `children`.
+pWidth: Width of image object.
+pHeight: Height of image object.
+pRGBA: Red, Green, Blue, and Alpha values from 0-255. If empty alpha defaults to 255.
+
+Description:
+Level 1 starts at pLineInset.
+
+Returns: Drawing which can be assigned to the `text` of an image
+*/
+function RenderTreeLinesWithOptions pLineInset, pLineSpacing, pLineStyles, pWidth, pHeight, pRGBA
+  if the number of items of pRGBA is 3 then put ",255" after pRGBA
+  return _renderTreeLines(pLineInset, pLineSpacing, pLineStyles, pWidth, pHeight, pRGBA)
+end RenderTreeLinesWithOptions
+
+
+/**
+Summary: Render tree lines for a row in the DataView.
+
+Parameters:
+pLineInset: Distance from left of image to start calculations.
+pLineSpacing: Distance between each level of lines.
+pLineStyles: Comma-delimited list of line styles for each level. Items can be empty, `child`, `last child`, `relative`, or `children`.
+pWidth: Width of image object.
+pHeight: Height of image object.
+pRGBA: Red, Green, Blue, and Alpha values from 0-255. If empty alpha defaults to 255.
+
+Description:
+Level 1 starts at pLineInset.
+
+Returns: Drawing that can be assigned to `text` of an image.
+*/
+private function _renderTreeLines pLineInset, pLineSpacing, pLineStyles, pWidth, pHeight, pRGBA
+  local tContext, tStartX, tStartY, tX, tY
+  local tStyle, tLevel, tDrawing
+
+  drawingStart tContext, pWidth, pHeight
+  drawingSetIdentityTransform tContext
+  drawingSetStrokeWidth tContext, 1
+  drawingSetNoFillPaint tContext
+  if pRGBA is empty then
+    drawingSetCurrentColorStrokePaint tContext
+  else
+    drawingSetSolidColorStrokePaint tContext, \
+          item 1 of pRGBA/255, \
+          item 2 of pRGBA/255, \
+          item 3 of pRGBA/255, \
+          item 4 of pRGBA/255
+  end if
+
+  drawingTraceBeginPath tContext
+
+  put pLineInset + pLineSpacing/2 into tX
+  drawingTraceMoveTo tContext, tX, 0
+
+  repeat for each item tStyle in pLineStyles
+    add 1 to tLevel
+
+    switch tStyle
+      case "relative"
+        drawingTraceLineTo tContext, tX, pHeight
+        break
+
+      case "last child"
+        drawingTraceLineTo tContext, tX, pHeight/2
+        drawingTraceLineTo tContext, tX+pLineSpacing, pHeight/2
+        break
+
+      case "child"
+        drawingTraceLineTo tContext, tX, pHeight
+        drawingTraceMoveTo tContext, tX, pHeight/2
+        drawingTraceLineTo tContext, tX+pLineSpacing, pHeight/2
+        break
+
+      case "children"
+        drawingTraceMoveTo tContext, tX, pHeight/2
+        drawingTraceLineTo tContext, tX, pHeight
+        break
+    end switch
+
+    put pLineInset + pLineSpacing/2 + (pLineSpacing * tLevel) into tX
+    drawingTraceMoveTo tContext, tX, 0
+  end repeat
+
+  drawingTraceEndPath tContext
+
+  drawingFinish tContext, tDrawing
+  return tDrawing
+end _renderTreeLines
 
 
 /**
