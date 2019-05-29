@@ -1685,7 +1685,7 @@ end dvHilitedData
 /**
 Summary: Returns the style of tree line to draw at each level for a particular node.
 
-Returns: Comma-delimited list. Items can be empty, `child`, `last child`, `relative`, or `children`.
+Returns: Comma-delimited list. Items can be empty, `child`, `last child`, `relative`, `parent`, or `collapsed parent`.
 */
 getProp dvNodeTreeLineStyles[pNodeId]
   put _findNodeOfId(pNodeId, true) into pNodeId
@@ -1697,7 +1697,7 @@ end dvNodeTreeLineStyles
 /**
 Summary: Returns the style of tree line to draw at each level for a particular row.
 
-Returns: Comma-delimited list. Items can be empty, `child`, `last child`, `relative`, or `children`.
+Returns: Comma-delimited list. Items can be empty, `child`, `last child`, `relative`, `parent`, or `collapsed parent`.
 */
 getProp dvRowTreeLineStyles[pRow]
   return the dvNodeTreeLineStyles[sRowNodeIdLookupA[pRow]] of me
@@ -1743,6 +1743,7 @@ command RenderTreeLines pRow, pRGBA
         tWidth, \
         the height of the target, \
         pRGBA)
+  return empty
 end RenderTreeLines
 
 
@@ -1752,7 +1753,7 @@ Summary: Helper function for rendering a drawing representing tree line styles.
 Parameters:
 pLineInset: Distance from left of image to start calculations.
 pLineSpacing: Distance between each level of lines.
-pLineStyles: Comma-delimited list of line styles for each level. Items can be empty, `child`, `last child`, `relative`, or `children`.
+pLineStyles: Comma-delimited list of line styles for each level. Items can be empty, `child`, `last child`, `relative`, `parent`, or `collapsed parent`.
 pWidth: Width of image object.
 pHeight: Height of image object.
 pRGBA: Red, Green, Blue, and Alpha values from 0-255. If empty alpha defaults to 255.
@@ -1774,7 +1775,7 @@ Summary: Render tree lines for a row in the DataView.
 Parameters:
 pLineInset: Distance from left of image to start calculations.
 pLineSpacing: Distance between each level of lines.
-pLineStyles: Comma-delimited list of line styles for each level. Items can be empty, `child`, `last child`, `relative`, or `children`.
+pLineStyles: Comma-delimited list of line styles for each level. Items can be empty, `child`, `last child`, `relative`, `parent`, or `collapsed parent`.
 pWidth: Width of image object.
 pHeight: Height of image object.
 pRGBA: Red, Green, Blue, and Alpha values from 0-255. If empty alpha defaults to 255.
@@ -1826,9 +1827,17 @@ private function _renderTreeLines pLineInset, pLineSpacing, pLineStyles, pWidth,
         drawingTraceLineTo tContext, tX+pLineSpacing, pHeight/2
         break
 
-      case "children"
+      case "parent"
+        drawingTraceMoveTo tContext, tX, pHeight/2
+        drawingTraceLineTo tContext, tX-pLineSpacing, pHeight/2
+
         drawingTraceMoveTo tContext, tX, pHeight/2
         drawingTraceLineTo tContext, tX, pHeight
+        break
+
+      case "collapsed parent"
+        drawingTraceMoveTo tContext, tX, pHeight/2
+        drawingTraceLineTo tContext, tX-pLineSpacing, pHeight/2
         break
     end switch
 
@@ -2288,7 +2297,7 @@ for each level represented in the row. For example, if pNodeIndexA points to a n
 at level 4 then the list returned will have 4 items. Drawing code can then render these
 styles in the chosen manner.
 
-Returns: comma-delimited list. Items can be empty, `child`, last child`, `relative`, or `children`.
+Returns: comma-delimited list. Items can be empty, `child`, last child`, `relative`, `parent` or `collapsed parent`.
 */
 private function _nodeTreeLineStyles pNodeIndexA, pNodeLevel
   local tAncestorsA, i, tLevel, tLineStyles, tHasChildren
@@ -2296,11 +2305,11 @@ private function _nodeTreeLineStyles pNodeIndexA, pNodeLevel
 
   put _ancestorElements(pNodeIndexA) into tAncestorsA
 
-  put the number of elements of sTreeA[pNodeIndexA]["children"] > 0 and sTreeA[pNodeIndexA]["expanded"] into tHasChildren
-  if tHasChildren then
-    put "children" into tLineStyles
+  put the number of elements of sTreeA[pNodeIndexA]["children"] > 0 into tHasChildren
+  if tHasChildren and sTreeA[pNodeIndexA]["expanded"] then
+    put "parent" into tLineStyles
   else
-    put "" into tLineStyles
+    put "collapsed parent" into tLineStyles
   end if
 
   # The setting for each level is dependent on that child node state. So pNodeIndexA's state
