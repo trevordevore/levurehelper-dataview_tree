@@ -2306,10 +2306,12 @@ private function _nodeTreeLineStyles pNodeIndexA, pNodeLevel
   put _ancestorElements(pNodeIndexA) into tAncestorsA
 
   put the number of elements of sTreeA[pNodeIndexA]["children"] > 0 into tHasChildren
-  if tHasChildren and sTreeA[pNodeIndexA]["expanded"] then
-    put "parent" into tLineStyles
-  else
-    put "collapsed parent" into tLineStyles
+  if tHasChildren then
+    if sTreeA[pNodeIndexA]["expanded"] then
+      put "parent" into tLineStyles
+    else
+      put "collapsed parent" into tLineStyles
+    end if
   end if
 
   # The setting for each level is dependent on that child node state. So pNodeIndexA's state
