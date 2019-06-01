@@ -94,9 +94,16 @@ widget community.livecode.trevordevore.treelines
         move to point [tX,tHeight/2] on mLinePath
         line to point [tX+mLineSpacing,tHeight/2] on mLinePath
 
-      else if tStyle is "children" then
+      else if tStyle is "parent" then
+        move to point [tX,tHeight/2] on mLinePath
+        line to point [tX-mLineSpacing,tHeight/2] on mLinePath
+
         move to point [tX,tHeight/2] on mLinePath
         line to point [tX,tHeight] on mLinePath
+
+      else if tStyle is "collapsed parent" then
+        move to point [tX,tHeight/2] on mLinePath
+        line to point [tX-mLineSpacing,tHeight/2] on mLinePath
       end if
 
       put mLineInset + mLineSpacing/2 + (mLineSpacing * tLevel) into tX
