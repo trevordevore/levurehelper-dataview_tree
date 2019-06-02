@@ -61,7 +61,7 @@ Returns: nothing
 setProp dvTree[pRender] pTreeA
   put pRender is not false into pRender
 
-  put pTreeA into sTreeA
+  put pTreeA into sTreeA["root"]["children"]
   _buildRowToNodeLookup
   put false into sRebuildLookupTable
 
@@ -80,8 +80,251 @@ Summary: Returns the internal tree array.
 Returns: Array
 */
 getProp dvTree
-  return sTreeA
+  return sTreeA["root"]["children"]
 end dvTree
+
+
+/**
+Summary: Adds a node to the tree and marks affected rows as dirty within the DataView.
+
+Parameters:
+pNode: An array representing the new node.
+pParent: The node id of the parent node.
+pPosition: The position within the parent's children. If empty then it will be the last sibling.
+
+Returns: nothing
+*/
+command AddNode pNodeA, pParent, pPosition
+  local tOldChildCount, tDirtyIdsA, tId
+
+  if pParent is empty then
+    put "root" into pParent[1]
+  else if pParent is not an array then
+    put _findNodeOfId(pParent) into pParent
+  end if
+
+  _addNodeToParent pNodeA, pParent, pPosition, tDirtyIdsA
+
+  repeat for each key tId in tDirtyIdsA
+    _setNodeRowIsDirty tId, true
+  end repeat
+
+  # Brute force
+  put true into sRebuildLookupTable
+  _refreshView
+
+  return empty
+end AddNode
+
+
+/**
+Summary: Moves a node to a new position within the tree and marks affected rows as dirty within the DataView.
+
+Parameters:
+pNode: Node id.
+pParent: New node parent id. Empty value assumes current parent.
+pPosition: New position.
+
+Returns: nothing
+*/
+command MoveNode pNode, pParent, pPosition
+  local tNodeA, tCurrentParent, tDirtyIdsA, tId
+
+  if pNode is not an array then put _findNodeOfId(pNode) into pNode
+  put _parentNodeIndex(pNode) into tCurrentParent
+
+  if pParent is empty then put tCurrentParent into pParent
+  else if pParent is not an array then put _findNodeOfId(pParent) into pParent
+
+  if pParent is tCurrentParent then
+    _moveNodeWithinParent pNode, pParent, pPosition, tDirtyIdsA
+  else
+    _moveNodeToNewParent pNode, tCurrentParent, pParent, pPosition, tDirtyIdsA
+  end if
+
+  repeat for each key tId in tDirtyIdsA
+    _setNodeRowIsDirty tId, true
+  end repeat
+
+  # Brute force
+  put true into sRebuildLookupTable
+  _refreshView
+
+  return empty
+end MoveNode
+
+
+/**
+Summary: Adds a node to a parent and marks affected rows as dirty.
+
+Parameters:
+pNodeA: Node array to add to parent.
+pParent: Parent index lookup array.
+pPosition: Position within parent.
+rDirtyIdsA: Array whose keys are ids that are dirty.
+
+Description:
+Any rows that need to be redrawn will be marked as dirty.
+
+Returns: nothing
+*/
+private command _addNodeToParent pNodeA, pParent, pPosition, @rDirtyIdsA
+  local tChildrenA, tOldChildCount
+
+  put the number of elements of sTreeA[pParent]["children"] into tOldChildCount
+
+  if pPosition is empty then
+    put tOldChildCount + 1 into pPosition
+  end if
+
+  if sTreeA[pParent]["children"][pPosition] is an array then
+    local i
+
+    repeat with i = tOldChildCount down to pPosition
+      put sTreeA[pParent]["children"][i] into sTreeA[pParent]["children"][i+1]
+    end repeat
+  end if
+
+  put pNodeA into sTreeA[pParent]["children"][pPosition]
+
+
+  //////////
+  // Mark any rows that need to change UI based on addition as dirty
+  //////////
+
+  // This may not exist in tree yet. _setNodeRowIsDirty performs checks though.
+  put empty into rDirtyIdsA[ pNodeA["id"] ]
+
+  // If 1st sibling was shifted down then it is dirty
+  if pPosition is 1 and tOldChildCount > 0 then
+    put empty into rDirtyIdsA[ sTreeA[pParent]["children"][2]["id"] ]
+  end if
+
+  if pPosition is tOldChildCount+1 then
+    // previous sibling is dirty as it was previously the last child
+    put empty into rDirtyIdsA[ sTreeA[pParent]["children"][tOldChildCount]["id"] ]
+  end if
+
+  if tOldChildCount is 0 then
+    // parent is dirty as it now has children
+    put empty into rDirtyIdsA[ sTreeA[pParent]["id"] ]
+  end if
+end _addNodeToParent
+
+
+/**
+Summary: Moves a node to a new parent and marks affected rows as dirty.
+
+Parameters:
+pNode: Node lookup array.
+pCurrentParent: Current parent index lookup array.
+pNewParent: New parent index lookup array.
+pPosition: Position within the new parent.
+rDirtyIdsA: Array whose keys are ids that are dirty.
+
+Returns: nothing
+*/
+private command _moveNodeToNewParent pNode, pCurrentParent, pNewParent, pPosition, @rDirtyIdsA
+  local tCurPosition, i
+  local tChildCount, tNodeA
+
+  put pNode[the number of elements of pNode] into tCurPosition
+  put the number of elements of sTreeA[pCurrentParent]["children"] into tChildCount
+  put min(pPosition, the number of elements of sTreeA[pNewParent]["children"]+1) into pPosition
+
+  put sTreeA[pNode] into tNodeA
+  delete local sTreeA[pNode]
+
+  // Move to new parent
+  _addNodeToParent tNodeA, pNewParent, pPosition, rDirtyIdsA
+
+  // Adjust siblings
+  repeat with i = tCurPosition+1 to tChildCount
+    put sTreeA[pCurrentParent]["children"][i] into sTreeA[pCurrentParent]["children"][i-1]
+  end repeat
+
+  // Delete last sibling which is no longer valid
+  delete local sTreeA[pCurrentParent]["children"][tChildCount]
+
+
+  //////////
+  // Mark any rows that need to change UI based on addition as dirty
+  //////////
+
+  // If first sibling was affected then it is dirty
+  if tCurPosition is 1 then
+    put empty into rDirtyIdsA[ sTreeA[pCurrentParent]["children"][1]["id"] ]
+  end if
+
+  // If last sibling was affected then it is dirty
+  if tCurPosition is tChildCount then
+    put empty into rDirtyIdsA[ sTreeA[pCurrentParent]["children"][tChildCount-1]["id"] ]
+  end if
+end _moveNodeToNewParent
+
+
+/**
+Summary: Moves a node within current parent and marks affected rows as dirty.
+
+Parameters:
+pNode: Node lookup array.
+pParent: Parent index lookup array.
+pPosition: Position within the new parent.
+rDirtyIdsA: Array whose keys are ids that are dirty.
+
+Returns: nothing
+*/
+private command _moveNodeWithinParent pNode, pParent, pPosition, @rDirtyIdsA
+  local tChildCount, tCurPosition, i
+  local tNodeA
+
+  put the number of elements of sTreeA[pParent]["children"] into tChildCount
+  put min(pPosition, tChildCount) into pPosition
+  put pNode[the number of elements of pNode] into tCurPosition
+
+  if tCurPosition is pPosition then
+    return empty
+  end if
+
+  put sTreeA[pNode] into tNodeA
+
+  if tCurPosition < pPosition then
+    -- t 1
+    --   2 ^
+    --   3 ^
+    -- > 4 ^
+    --   5
+    repeat with i = tCurPosition+1 to pPosition
+      put sTreeA[pParent]["children"][i] into sTreeA[pParent]["children"][i-1]
+    end repeat
+  else if tCurPosition > pPosition then
+    -- > 1 v
+    --   2 v
+    --   3 v
+    -- t 4
+    --   5
+    repeat with i = tCurPosition-1 down to pPosition
+      put sTreeA[pParent]["children"][i] into sTreeA[pParent]["children"][i+1]
+    end repeat
+  end if
+
+  put tNodeA into sTreeA[pParent]["children"][pPosition]
+
+
+  //////////
+  // Mark any rows that need to change UI based on addition as dirty
+  //////////
+
+  // If last sibling was affected then it is dirty
+  if tCurPosition is tChildCount or pPosition is tChildCount then
+    put empty into rDirtyIdsA[ sTreeA[pParent]["children"][tChildCount]["id"] ]
+  end if
+
+  // If first sibling was affected then it is dirty
+  if tCurPosition is 1 or pPosition is 1 then
+    put empty into rDirtyIdsA[ sTreeA[pParent]["children"][1]["id"] ]
+  end if
+end _moveNodeWithinParent
 
 
 /**
@@ -177,7 +420,7 @@ Call `RefreshView` to redraw the view.
 Returns: nothing
 */
 command ExpandAllNodes
-  _setExpandedInTreeBranch sTreeA, empty, true
+  _setExpandedInTreeBranch sTreeA["root"]["children"], empty, true
   put true into sRebuildLookupTable
   _refreshView
 end ExpandAllNodes
@@ -192,7 +435,7 @@ Call `RefreshView` to redraw the view.
 Returns: nothing
 */
 command CollapseAllNodes
-  _setExpandedInTreeBranch sTreeA, empty, false
+  _setExpandedInTreeBranch sTreeA["root"]["children"], empty, false
   put true into sRebuildLookupTable
   _refreshView
 end CollapseAllNodes
@@ -909,6 +1152,7 @@ end _setNodeProperty
 
 private command _setNodeRowIsDirty pNodeId, pIsDirty
   if sNodeIdRowLookupA[pNodeId] is an integer then
+    -- put sNodeIdRowLookupA[pNodeId] && ":" && pNodeId & cr after msg
     set the dvRowIsDirty[sNodeIdRowLookupA[pNodeId]] of me to pIsDirty
   end if
 end _setNodeRowIsDirty
@@ -1211,14 +1455,17 @@ Summary: Builds the lookup table used to match nodes to rows.
 Returns: nothing
 */
 private command _buildRowToNodeLookup
-  local tRow
+  local tRow, tIndexA
 
   put 0 into tRow
   put empty into sRowNodeIdLookupA
   put empty into sNodeIdNodeLookupA
   put empty into sNodeIdRowLookupA
 
-  _addBranchToRowToNodeLookup sTreeA, empty, tRow, true
+  put "root" into tIndexA[1]
+  put "children" into tIndexA[2]
+
+  _addBranchToRowToNodeLookup sTreeA["root"]["children"], tIndexA, tRow, true
 
   return empty
 end _buildRowToNodeLookup
@@ -1378,9 +1625,12 @@ end _nodeLevel
 
 
 private function _findNodeOfId pNodeId, pWithValidation
-  local tFoundIndexA
+  local tIndexA, tFoundIndexA
 
-  put _searchBranchForNodeId(sTreeA, empty, pNodeId) into tFoundIndexA
+  put "root" into tIndexA[1]
+  put "children" into tIndexA[2]
+
+  put _searchBranchForNodeId(sTreeA["root"]["children"], tIndexA, pNodeId) into tFoundIndexA
   if tFoundIndexA is not an array then
     if pWithValidation then
       throw "node id not found:" && pNodeId
