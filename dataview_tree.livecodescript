@@ -543,13 +543,14 @@ See `SetRowIsExpanded` for more information.
 Returns: empty
 */
 command SetNodeIsExpanded pNode, pLevelsDown, pExpandedState, pRefreshView
-  local tRow, tNodeIndexA, tCurrentLevel
+  local tRow, tCurrentLevel
 
   put pRefreshView is not false into pRefreshView
 
-  put sNodeIdNodeLookupA[pNode] into tNodeIndexA
-  if tNodeIndexA is not an array then throw "invalid node id"
-  if sTreeA[tNodeIndexA]["is leaf"] then throw "cannot change expanded setting of a leaf node"
+  if pNode is not an array then put sNodeIdNodeLookupA[pNode] into pNode
+
+  if pNode is not an array then throw "invalid node id"
+  if sTreeA[pNode]["is leaf"] then throw "cannot change expanded setting of a leaf node"
 
   if pLevelsDown is empty then
     put 0 into pLevelsDown
@@ -563,12 +564,12 @@ command SetNodeIsExpanded pNode, pLevelsDown, pExpandedState, pRefreshView
   end if
 
   # Toggle
-  _setNodeExpandedState tNodeIndexA, pExpandedState
+  _setNodeExpandedState pNode, pExpandedState
 
   # Affect children
   if pLevelsDown is not 0 then
     put 0 into tCurrentLevel
-    _setNodeAncestorExpandedState tNodeIndexA, sTreeA[tNodeIndexA]["expanded"], \
+    _setNodeAncestorExpandedState pNode, sTreeA[pNode]["expanded"], \
           pLevelsDown, tCurrentLevel
   end if
 
