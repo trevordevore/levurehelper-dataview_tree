@@ -591,7 +591,9 @@ pRefreshView: Pass in false to keep the view from being refreshed.
 Description:
 See `SetRowIsExpanded`.
 
-Returns: Nothing
+Returns the new expanded state.
+
+Returns: Boolean
 */
 command ToggleRowIsExpanded pRow, pLevelsDown, pRefreshView
   local tNodeIndexA, tExpandedState
@@ -600,7 +602,7 @@ command ToggleRowIsExpanded pRow, pLevelsDown, pRefreshView
   put not sTreeA[tNodeIndexA]["expanded"] into tExpandedState
 
   SetRowIsExpanded pRow, pLevelsDown, tExpandedState, pRefreshView
-  return the result
+  return tExpandedState for value
 end ToggleRowIsExpanded
 
 
@@ -615,7 +617,9 @@ pRefreshView: Pass in false to keep the view from being refreshed.
 Description:
 See `SetRowIsExpanded`.
 
-Returns: empty
+Returns the new expanded state.
+
+Returns: Boolean
 */
 command ToggleNodeIsExpanded pNode, pLevelsDown, pRefreshView
   local tExpandedState
@@ -624,7 +628,7 @@ command ToggleNodeIsExpanded pNode, pLevelsDown, pRefreshView
 
   put not sTreeA[pNode]["expanded"] into tExpandedState
   SetNodeIsExpanded pNode, pLevelsDown, tExpandedState, pRefreshView
-  return empty
+  return tExpandedState for value
 end ToggleNodeIsExpanded
 
 
