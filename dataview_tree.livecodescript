@@ -1896,7 +1896,7 @@ private function _parentNodeIndex pNodeIndexA
   local tCount
 
   put the number of elements of pNodeIndexA into tCount
-  if pNodeIndexA[tCount - 1] is "children" then
+  if pNodeIndexA[tCount - 1] is "children" and pNodeIndexA[tCount-2] is not "root" then
     delete variable pNodeIndexA[tCount]
     delete variable pNodeIndexA[tCount-1]
     return pNodeIndexA
@@ -1920,7 +1920,7 @@ private function _ancestorElements pNodeIndexA
   put the number of elements of pNodeIndexA into tIndexCount
 
   repeat forever
-    if pNodeIndexA[tIndexCount-1] is "children" then
+    if pNodeIndexA[tIndexCount-1] is "children" and pNodeIndexA[tIndexCount-2] is not "root" then
       delete variable pNodeIndexA[tIndexCount]
       delete variable pNodeIndexA[tIndexCount]
 
