@@ -299,7 +299,9 @@ private command _deleteNode pNode, @rDirtyIdsA
   end repeat
 
   // Delete last sibling which is no longer valid
-  delete local sTreeA[tParent]["children"][tChildCount]
+  if sTreeA[tParent]["children"][tChildCount] is an array then
+    delete local sTreeA[tParent]["children"][tChildCount]
+  end if
 
   //////////
   // Mark any rows that need to change UI based on addition as dirty
