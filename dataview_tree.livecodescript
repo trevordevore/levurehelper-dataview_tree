@@ -106,7 +106,7 @@ pPosition: The position within the parent's children. If empty then it will be t
 Returns: nothing
 */
 command AddNode pNodeA, pParent, pPosition
-  local tOldChildCount, tDirtyIdsA, tId
+  local tDirtyIdsA, tId
 
   if pParent is empty then
     put "root" into pParent[1]
@@ -139,7 +139,7 @@ pPosition: New position.
 Returns: nothing
 */
 command MoveNode pNode, pParent, pPosition
-  local tNodeA, tCurrentParent, tDirtyIdsA, tId
+  local tCurrentParent, tDirtyIdsA, tId
 
   if pNode is not an array then put _findNodeOfId(pNode) into pNode
   put _parentNodeIndex(pNode) into tCurrentParent
