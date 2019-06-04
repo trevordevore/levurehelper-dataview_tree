@@ -262,7 +262,7 @@ Returns: nothing
 private command _moveNodeToNewParent pNode, pNewParent, pPosition, @rDirtyIdsA
   local tNodeA
 
-  put min(pPosition, the number of elements of sTreeA[pNewParent]["children"]+1) into pPosition
+  put min(max(1, pPosition), the number of elements of sTreeA[pNewParent]["children"]+1) into pPosition
 
   // Store copy of node
   put sTreeA[pNode] into tNodeA
@@ -338,7 +338,7 @@ private command _moveNodeWithinParent pNode, pParent, pPosition, @rDirtyIdsA
   local tNodeA
 
   put the number of elements of sTreeA[pParent]["children"] into tChildCount
-  put min(pPosition, tChildCount) into pPosition
+  put min(max(1, pPosition), tChildCount) into pPosition
   put _nodePosition(pNode) into tCurPosition
 
   if tCurPosition is pPosition then
