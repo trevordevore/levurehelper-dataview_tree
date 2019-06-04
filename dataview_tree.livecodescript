@@ -1898,7 +1898,7 @@ private function _parentNodeIndex pNodeIndexA
   local tCount
 
   put the number of elements of pNodeIndexA into tCount
-  if pNodeIndexA[tCount - 1] is "children" and pNodeIndexA[tCount-2] is not "root" then
+  if pNodeIndexA[tCount - 1] is "children" then
     delete variable pNodeIndexA[tCount]
     delete variable pNodeIndexA[tCount-1]
     return pNodeIndexA
