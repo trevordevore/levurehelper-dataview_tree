@@ -2274,7 +2274,6 @@ private function _ancestorElements pNodeIndexA
 
       add 1 to i
       put pNodeIndexA into tAncestorsA[i]
-      subtract 2 from tIndexCount
     else
       exit repeat
     end if
