@@ -1218,7 +1218,6 @@ end _setNodeProperty
 
 private command _setNodeRowIsDirty pNodeId, pIsDirty
   if sNodeIdRowLookupA[pNodeId] is an integer then
-    -- put sNodeIdRowLookupA[pNodeId] && ":" && pNodeId & cr after msg
     set the dvRowIsDirty[sNodeIdRowLookupA[pNodeId]] of me to pIsDirty
   end if
 end _setNodeRowIsDirty
