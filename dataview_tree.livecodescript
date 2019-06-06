@@ -102,11 +102,14 @@ Parameters:
 pNode: An array representing the new node.
 pParent: The node id of the parent node.
 pPosition: The position within the parent's children. If empty then it will be the last sibling.
+pRefreshView: Pass in false to prevent the view being refreshed.
 
 Returns: nothing
 */
-command AddNode pNodeA, pParent, pPosition
+command AddNode pNodeA, pParent, pPosition, pRefreshView
   local tDirtyIdsA, tId
+
+  put pRefreshView is not false into pRefreshView
 
   if pParent is empty then
     put "root" into pParent[1]
@@ -122,7 +125,10 @@ command AddNode pNodeA, pParent, pPosition
 
   # Brute force
   put true into sRebuildLookupTable
-  _refreshView
+
+  if pRefreshView then
+    _refreshView
+  end if
 
   return empty
 end AddNode
@@ -135,11 +141,14 @@ Parameters:
 pNode: Node id.
 pParent: New node parent id. Empty value assumes current parent.
 pPosition: New position.
+pRefreshView: Pass in false to prevent the view being refreshed.
 
 Returns: nothing
 */
-command MoveNode pNode, pParent, pPosition
+command MoveNode pNode, pParent, pPosition, pRefreshView
   local tCurrentParent, tDirtyIdsA, tId
+
+  put pRefreshView is not false into pRefreshView
 
   if pNode is not an array then put _findNodeOfId(pNode) into pNode
   put _parentNodeIndex(pNode) into tCurrentParent
@@ -159,7 +168,10 @@ command MoveNode pNode, pParent, pPosition
 
   # Brute force
   put true into sRebuildLookupTable
-  _refreshView
+
+  if pRefreshView then
+    _refreshView
+  end if
 
   return empty
 end MoveNode
