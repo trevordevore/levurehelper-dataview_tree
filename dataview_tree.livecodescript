@@ -238,6 +238,7 @@ private command _addNodeToParent pNodeA, pParent, pPosition, @rDirtyIdsA
 
     repeat with i = tOldChildCount down to pPosition
       put sTreeA[pParent]["children"][i] into sTreeA[pParent]["children"][i+1]
+      _updateNodeIndexInLookupTable sTreeA[pParent]["children"][i]["id"], i+1
     end repeat
   end if
 
@@ -322,6 +323,7 @@ private command _deleteNode pNode, @xDirtyIdsA
   // Adjust siblings
   repeat with i = tCurPosition+1 to tChildCount
     put sTreeA[tParent]["children"][i] into sTreeA[tParent]["children"][i-1]
+    _updateNodeIndexInLookupTable sTreeA[tParent]["children"][i]["id"], i-1
   end repeat
 
   // Delete last sibling which is no longer valid
@@ -348,6 +350,15 @@ private command _deleteNode pNode, @xDirtyIdsA
     put empty into xDirtyIdsA[ sTreeA[tParent]["id"] ]
   end if
 end _deleteNode
+
+
+private command _updateNodeIndexInLookupTable pNodeId, pNewIndex
+  local tIndexA
+
+  put sNodeIdNodeLookupA[ pNodeId ] into tIndexA
+  put pNewIndex into tIndexA[the number of elements of tIndexA]
+  put tIndexA into sNodeIdNodeLookupA[ pNodeId ]
+end _updateNodeIndexInLookupTable
 
 
 private command _removeNodeFromLookupTables pNode
@@ -405,6 +416,7 @@ private command _moveNodeWithinParent pNode, pParent, pPosition, @rDirtyIdsA
     --   5
     repeat with i = tCurPosition+1 to pPosition
       put sTreeA[pParent]["children"][i] into sTreeA[pParent]["children"][i-1]
+      _updateNodeIndexInLookupTable sTreeA[pParent]["children"][i]["id"], i-1
     end repeat
   else if tCurPosition > pPosition then
     -- > 1 v
@@ -414,6 +426,7 @@ private command _moveNodeWithinParent pNode, pParent, pPosition, @rDirtyIdsA
     --   5
     repeat with i = tCurPosition-1 down to pPosition
       put sTreeA[pParent]["children"][i] into sTreeA[pParent]["children"][i+1]
+      _updateNodeIndexInLookupTable sTreeA[pParent]["children"][i]["id"], i+1
     end repeat
   end if
 
