@@ -280,16 +280,21 @@ Summary: Deletes a node from the tree and marks affected rows as dirty.
 
 Parameters:
 pNode: Node index lookup array.
-rDirtyIdsA: Array whose keys are ids that are dirty after this handler completes.
+xDirtyIdsA: Array whose keys are ids that are dirty after this handler completes.
 
 Returns: nothing
 */
-private command _deleteNode pNode, @rDirtyIdsA
+private command _deleteNode pNode, @xDirtyIdsA
   local tParent, tCurPosition, tChildCount, i
 
   put _parentNodeIndex(pNode) into tParent
   put the number of elements of sTreeA[tParent]["children"] into tChildCount
   put _nodePosition(pNode) into tCurPosition
+
+  # Remove all affected nodes from the lookup tables so non-existent index paths
+  # aren't returned in calls to _findNodeOfId(). The lookup tables will be rebuilt
+  # after calls to this handler.
+  _removeNodeFromLookupTables pNode
 
   delete local sTreeA[pNode]
 
@@ -309,19 +314,41 @@ private command _deleteNode pNode, @rDirtyIdsA
 
   // If first sibling was affected then it is dirty
   if tCurPosition is 1 then
-    put empty into rDirtyIdsA[ sTreeA[tParent]["children"][1]["id"] ]
+    put empty into xDirtyIdsA[ sTreeA[tParent]["children"][1]["id"] ]
   end if
 
   // If last sibling was affected then it is dirty
   if tCurPosition is tChildCount then
-    put empty into rDirtyIdsA[ sTreeA[tParent]["children"][tChildCount-1]["id"] ]
+    put empty into xDirtyIdsA[ sTreeA[tParent]["children"][tChildCount-1]["id"] ]
   end if
 
   // If last child was deleted then mark parent as dirty
   if tChildCount is 1 then
-    put empty into rDirtyIdsA[ sTreeA[tParent]["id"] ]
+    put empty into xDirtyIdsA[ sTreeA[tParent]["id"] ]
   end if
 end _deleteNode
+
+
+private command _removeNodeFromLookupTables pNode
+  local tRow, tIndexA, tIndexCount
+
+  # Delete node in tables
+  put sNodeIdRowLookupA[ sTreeA[pNode]["id"] ] into tRow
+  delete local sRowNodeIdLookupA[ tRow ]
+  delete local sNodeIdRowLookupA[ sTreeA[pNode]["id"] ]
+  delete local sNodeIdNodeLookupA[ sTreeA[pNode]["id"] ]
+
+  # Delete node children
+  put the number of elements of pNode into tIndexCount
+  put pNode into tIndexA
+
+  repeat with tIndex = 1 to the number of elements of sTreeA[pNode]["children"]
+    put "children" into tIndexA[tIndexCount + 1]
+    put tIndex into tIndexA[tIndexCount + 2]
+
+    _removeNodeFromLookupTables tIndexA
+  end repeat
+end _removeNodeFromLookupTables
 
 
 /**
