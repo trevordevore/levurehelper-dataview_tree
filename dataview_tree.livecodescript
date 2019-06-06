@@ -181,16 +181,22 @@ end MoveNode
 Summary: Deletes a node (and any children) from the tree.
 
 Parameters:
-pNode: The node id.
+pNodeIds: Comma delimited list of node ids.
+pRefreshView: Pass in false to prevent the view being refreshed.
 
 Returns: nothing
 */
-command DeleteNode pNode
-  local tDirtyIdsA, tId
+command DeleteNodes pNodeIds, pRefreshView
+  local tDirtyIdsA, tNodeA, tId
 
-  if pNode is not an array then put _findNodeOfId(pNode) into pNode
+  put pRefreshView is not false into pRefreshView
 
-  _deleteNode pNode, tDirtyIdsA
+  repeat for each item tId in pNodeIds
+    put _findNodeOfId(tId) into tNodeA
+    if tNodeA is an array then
+      _deleteNode tNodeA, tDirtyIdsA
+    end if
+  end repeat
 
   repeat for each key tId in tDirtyIdsA
     _setNodeRowIsDirty tId, true
@@ -198,10 +204,13 @@ command DeleteNode pNode
 
   # Brute force
   put true into sRebuildLookupTable
-  _refreshView
+
+  if pRefreshView then
+    _refreshView
+  end if
 
   return empty
-end DeleteNode
+end DeleteNodes
 
 
 /**
