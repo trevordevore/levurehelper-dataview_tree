@@ -313,6 +313,11 @@ private command _deleteNode pNode, @xDirtyIdsA
   put the number of elements of sTreeA[tParent]["children"] into tChildCount
   put _nodePosition(pNode) into tCurPosition
 
+  # Delete control if caching is turned on
+  if the viewProp["cache"] of me is not "none" then
+    DeleteRowControlFromCache sNodeIdRowLookupA[ sTreeA[pNode]["id"] ]
+  end if
+
   # Remove all affected nodes from the lookup tables so non-existent index paths
   # aren't returned in calls to _findNodeOfId(). The lookup tables will be rebuilt
   # after calls to this handler.
