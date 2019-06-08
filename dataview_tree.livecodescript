@@ -96,6 +96,29 @@ end dvTree
 
 
 /**
+Summary: Returns all node ids in the tree in no particular order.
+
+Description:
+This property is useful if you need to look at all of the nodes in a tree
+but in no particular order.
+
+Returns: Comma delimited list
+*/
+getProp dvNodeIds
+  local tKeys
+
+  if sRebuildLookupTable then
+    _buildRowToNodeLookup
+    put false into sRebuildLookupTable
+  end if
+
+  put the keys of sNodeIdNodeLookupA into tKeys
+  replace cr with comma in tKeys
+  return tKeys
+end dvNodeIds
+
+
+/**
 Summary: Adds a node to the tree and marks affected rows as dirty within the DataView.
 
 Parameters:
