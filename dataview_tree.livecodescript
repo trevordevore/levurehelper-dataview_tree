@@ -923,6 +923,19 @@ end dvRowType
 
 
 /**
+Summary: Returns the control associated with a node.
+
+Parameters:
+pNodeId: The target node id.
+
+Returns: Control reference or empty
+*/
+getProp dvControlOfNode[pNodeId]
+  return the dvControlOfRow[ sNodeIdRowLookupA[pNodeId] ] of me
+end dvControlOfNode
+
+
+/**
 Summary: Sets the `type` of a node.
 
 Parameters:
