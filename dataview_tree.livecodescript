@@ -1463,7 +1463,7 @@ end dvNodeAncestorNodes
 Summary: Returns the node keys of the descendants of a row.
 
 Parameters:
-pRow: The row to get ancestor nodes for.
+pRow: The row to get descendant nodes for.
 
 Returns: Numerically indexed array of index arrays
 */
