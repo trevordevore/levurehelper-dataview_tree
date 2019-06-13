@@ -1333,9 +1333,10 @@ Summary: Returns the row numbers of a row's children.
 Returns: List
 */
 getProp dvRowChildRows[pRow]
-  local tList
-  repeat with i = pRow + 1 to pRow + the number of elements of sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["children"]
-    put i & "," after tList
+  local tList, tNodeA
+
+  repeat for each element tNodeA in sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["children"]
+    put sNodeIdRowLookupA[tNodeA["id"]] & "," after tList
   end repeat
   delete the last char of tList
   return tList
