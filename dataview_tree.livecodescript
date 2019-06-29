@@ -1367,9 +1367,52 @@ If pRow is the third child of it's parent then this property would return `3`.
 
 Returns: Integer
 */
-getProp dbRowSiblingOrder[pRow]
+getProp dvRowSiblingOrder[pRow]
   return _nodePosition(sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]])
-end dbRowSiblingOrder
+end dvRowSiblingOrder
+
+
+/**
+Summary: Checks if a row is the first child of its parent.
+
+Parameters:
+pRow: The row to check.
+
+Returns: Boolean
+*/
+getProp dvRowIsFirstChild[pRow]
+  local tIndexA, tParentIndexA
+
+  put sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] into tIndexA
+  if tIndexA is an array then
+    return _nodePosition(tIndexA) is 1
+  end if
+
+  return false
+end dvRowIsFirstChild
+
+
+/**
+Summary: Checks if a row is the last child of its parent.
+
+Parameters:
+pRow: The row to check.
+
+Returns: Boolean
+*/
+getProp dvRowIsLastChild[pRow]
+  local tIndexA, tParentIndexA
+
+  put sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] into tIndexA
+  if tIndexA is an array then
+    put _parentNodeIndex(tIndexA) into tParentIndexA
+    if tParentIndexA is an array then
+      return _nodePosition(tIndexA) is the number of elements of sTreeA[tParentIndexA]["children"]
+    end if
+  end if
+
+  return false
+end dvRowIsLastChild
 
 
 /**
