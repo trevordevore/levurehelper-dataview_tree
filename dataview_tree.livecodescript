@@ -1689,7 +1689,11 @@ Returns: Comma-delimited list. Items can be empty, `child`, `last child`, `relat
 */
 getProp dvNodeTreeLineStyles[pNodeId]
   put _findNodeOfId(pNodeId, true) into pNodeId
-  return _nodeTreeLineStyles(pNodeId, _nodeLevel(pNodeId))
+  if "tree line styles" is among the keys of sTreeA[ pNodeId ] then
+    return sTreeA[ pNodeId ]["tree line styles"]
+  else
+    return _nodeTreeLineStyles(pNodeId, _nodeLevel(pNodeId))
+  end if
 end dvNodeTreeLineStyles
 
 
