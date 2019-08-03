@@ -1722,7 +1722,7 @@ Returns: nothing
 */
 command RenderTreeLines pRow, pRGBA
   local tNodeId, tInset, tSpacing, tStyles
-  local tRect, tWidth
+  local tLeft
 
   if the number of items of pRGBA is 3 then put ",255" after pRGBA
 
@@ -1735,18 +1735,16 @@ command RenderTreeLines pRow, pRGBA
   put the viewProp["line inset"] of me into tInset
   put the viewProp["line spacing"] of me into tSpacing
   put sTreeA[ sNodeIdNodeLookupA[tNodeId] ]["tree line styles"] into tStyles
+  put the left of the target into tLeft
 
-  put tInset + tSpacing * the number of items of tStyles into tWidth
-  put the rect of the target into tRect
-  put item 1 of tRect + tWidth into item 3 of tRect
-
-  set the rect of the target to tRect
   set the text of the target to _renderTreeLines(tInset, \
         tSpacing, \
-        sTreeA[ sNodeIdNodeLookupA[tNodeId] ]["tree line styles"], \
-        tWidth, \
+        tStyles, \
         the height of the target, \
         pRGBA)
+
+  set the left of the target to tLeft
+
   return empty
 end RenderTreeLines
 
