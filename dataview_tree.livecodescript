@@ -1813,7 +1813,7 @@ private function _renderTreeLines pLineInset, pLineSpacing, pLineStyles, pHeight
 
   drawingTraceBeginPath tContext
 
-  put pLineInset + pLineSpacing/2 into tX
+  put tXInset + pLineSpacing/2 into tX
   drawingTraceMoveTo tContext, tX, 0
 
   repeat for each item tStyle in pLineStyles
@@ -1825,31 +1825,31 @@ private function _renderTreeLines pLineInset, pLineSpacing, pLineStyles, pHeight
         break
 
       case "last child"
-        drawingTraceLineTo tContext, tX, pHeight/2
-        drawingTraceLineTo tContext, tX+pLineSpacing, pHeight/2
+        drawingTraceLineTo tContext, tX, tYInset
+        drawingTraceLineTo tContext, tX+pLineSpacing, tYInset
         break
 
       case "child"
         drawingTraceLineTo tContext, tX, pHeight
-        drawingTraceMoveTo tContext, tX, pHeight/2
-        drawingTraceLineTo tContext, tX+pLineSpacing, pHeight/2
+        drawingTraceMoveTo tContext, tX, tYInset
+        drawingTraceLineTo tContext, tX+pLineSpacing, tYInset
         break
 
       case "parent"
-        drawingTraceMoveTo tContext, tX, pHeight/2
-        drawingTraceLineTo tContext, tX-pLineSpacing, pHeight/2
+        drawingTraceMoveTo tContext, tX, tYInset
+        drawingTraceLineTo tContext, tX-pLineSpacing, tYInset
 
-        drawingTraceMoveTo tContext, tX, pHeight/2
+        drawingTraceMoveTo tContext, tX, tYInset
         drawingTraceLineTo tContext, tX, pHeight
         break
 
       case "collapsed parent"
-        drawingTraceMoveTo tContext, tX, pHeight/2
-        drawingTraceLineTo tContext, tX-pLineSpacing, pHeight/2
+        drawingTraceMoveTo tContext, tX, tYInset
+        drawingTraceLineTo tContext, tX-pLineSpacing, tYInset
         break
     end switch
 
-    put pLineInset + pLineSpacing/2 + (pLineSpacing * tLevel) into tX
+    put tXInset + pLineSpacing/2 + (pLineSpacing * tLevel) into tX
     drawingTraceMoveTo tContext, tX, 0
   end repeat
 
