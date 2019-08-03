@@ -1753,7 +1753,7 @@ end RenderTreeLines
 Summary: Helper function for rendering a drawing representing tree line styles.
 
 Parameters:
-pLineInset: Distance from left of image to start calculations.
+pLineInset: Point representing distance from left (item 1) and top (item 2) of image to start calculations. If top is empty then half of pHeight is used.
 pLineSpacing: Distance between each level of lines.
 pLineStyles: Comma-delimited list of line styles for each level. Items can be empty, `child`, `last child`, `relative`, `parent`, or `collapsed parent`.
 pWidth: Width of image object.
@@ -1765,9 +1765,9 @@ Level 1 starts at pLineInset.
 
 Returns: Drawing which can be assigned to the `text` of an image
 */
-function RenderTreeLinesWithOptions pLineInset, pLineSpacing, pLineStyles, pWidth, pHeight, pRGBA
+function RenderTreeLinesWithOptions pLineInset, pLineSpacing, pLineStyles, pHeight, pRGBA
   if the number of items of pRGBA is 3 then put ",255" after pRGBA
-  return _renderTreeLines(pLineInset, pLineSpacing, pLineStyles, pWidth, pHeight, pRGBA)
+  return _renderTreeLines(pLineInset, pLineSpacing, pLineStyles, pHeight, pRGBA)
 end RenderTreeLinesWithOptions
 
 
@@ -1775,10 +1775,9 @@ end RenderTreeLinesWithOptions
 Summary: Render tree lines for a row in the DataView.
 
 Parameters:
-pLineInset: Distance from left of image to start calculations.
+pLineInset: Point representing distance from left (item 1) and top (item 2) of image to start calculations. If top is empty then half of pHeight is used.
 pLineSpacing: Distance between each level of lines.
 pLineStyles: Comma-delimited list of line styles for each level. Items can be empty, `child`, `last child`, `relative`, `parent`, or `collapsed parent`.
-pWidth: Width of image object.
 pHeight: Height of image object.
 pRGBA: Red, Green, Blue, and Alpha values from 0-255. If empty alpha defaults to 255.
 
@@ -1787,11 +1786,18 @@ Level 1 starts at pLineInset.
 
 Returns: Drawing that can be assigned to `text` of an image.
 */
-private function _renderTreeLines pLineInset, pLineSpacing, pLineStyles, pWidth, pHeight, pRGBA
+private function _renderTreeLines pLineInset, pLineSpacing, pLineStyles, pHeight, pRGBA
   local tContext, tStartX, tStartY, tX, tY
   local tStyle, tLevel, tDrawing
+  local tXInset, tYInset, tWidth
 
-  drawingStart tContext, pWidth, pHeight
+  put item 1 of pLineInset into tXInset
+  put item 2 of pLineInset into tYInset
+  if tYInset is empty then put pHeight/2 into tYInset
+
+  put tXInset + pLineSpacing * the number of items of pLineStyles into tWidth
+
+  drawingStart tContext, tWidth, pHeight
   drawingSetIdentityTransform tContext
   drawingSetStrokeWidth tContext, 1
   drawingSetNoFillPaint tContext
