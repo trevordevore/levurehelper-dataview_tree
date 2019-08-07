@@ -2538,10 +2538,6 @@ command ValidateRowDrop pDraggingInfoA, @pProposedRow, @pProposedDropOperation
         or (pProposedRow is the number of elements of sRowNodeIdLookupA + 1 \
         and pProposedDropOperation is "above") into tDropIsAfterLastRow
 
-  -- if not _rowDropValidatesAgainstRules(tSourceNodeIds, pProposedRow, pProposedDropOperation, tDropIsAfterLastRow) then
-  --   return false
-  -- end if
-
   # No rules prohibit reorder so ask instance if drop is valid.
   local tDraggingInfoA, tDropLevel
 
@@ -2654,59 +2650,3 @@ private function _levelThatMouseIsAt pMouseH
   put the left of group "dvListMask" of me + tXOffset into tRootH
   return max(1, (pMouseH - tRootH) div the viewProp["line spacing"] of me)
 end _levelThatMouseIsAt
-
-
-/**
-Summary: Checks for certain conditions which would automatically cancel a drop operation.
-
-Returns: Boolean
-*/
-private function _rowDropValidatesAgainstRules pSourceNodeIds, pProposedRow, pProposedDropOperation, pDropIsAfterLastRow
-  local tNodeId
-
-  if pSourceNodeIds is empty then return false
-
-  /*
-  Enforce some rules where reorder is not allowed.
-    Is proposed row the number of rows + 1?
-      Yes:
-        Is the number of nodes being dragged > 1?
-          Yes: Drop allowed as it is possible that drop could change order.
-          No: Not allowed as drop wouldn't change order.
-      No:
-        Is node at proposed row first item in dragged nodes?
-          Yes:
-            Is drop above and number of dragged nodes > 1?
-              Yes: Drop allowed as it is possible that drop could change order.
-            No:
-              Is node at proposed row last item in dragged nodes?
-                Yes:
-                  Is drop operation "on" and number of dragged nodes > 1?
-                    Yes: Drop allowed as it is possible that drop could change order.
-        Otherwise:
-          No drop allowed
-  */
-  put sRowNodeIdLookupA[pProposedRow] into tNodeId
-
-  if pDropIsAfterLastRow then
-    if the number of items of pSourceNodeIds is 1 then
-      return false
-    end if
-  else
-    set the wholematches to true
-
-    if tNodeId is the first item of pSourceNodeIds then
-      if not (pProposedDropOperation is "above" and the number of items of pSourceNodeIds > 1) then
-        return false
-      end if
-    else if tNodeId is the last item of pSourceNodeIds then
-      if not (pProposedDropOperation is "on" and the number of items of pSourceNodeIds > 1) then
-        return false
-      end if
-    else if tNodeId is among the items of pSourceNodeIds then
-      return false
-    end if
-  end if
-
-  return true
-end _rowDropValidatesAgainstRules
