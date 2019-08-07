@@ -2514,7 +2514,7 @@ on dragStart
 end dragStart
 
 
-command ValidateRowDrop pDraggingInfoA, @pProposedRow, @pProposedDropOperation
+command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
   local tSourceNodeIds, tSourceDataView, tSourceStack, tDropIsAfterLastRow
   local tParentNodeA, tParentNodeId, tDropPosition
 
@@ -2545,7 +2545,7 @@ command ValidateRowDrop pDraggingInfoA, @pProposedRow, @pProposedDropOperation
   end if
 
   # No rules prohibit reorder so ask instance if drop is valid.
-  local tDraggingInfoA, tDropLevel
+  local tDropLevel
 
   put _levelThatMouseIsAt(pDraggingInfoA["mouseH"]) into tDropLevel
 
@@ -2620,11 +2620,11 @@ command ValidateRowDrop pDraggingInfoA, @pProposedRow, @pProposedDropOperation
   put tSourceNodeIds into sDropInfoA["draggingInfo"]["ids"]
   put tSourceDataView into sDropInfoA["draggingInfo"]["source control id"]
   put tSourceStack into sDropInfoA["draggingInfo"]["source stack"]
+  put tDropLevel into sDropInfoA["draggingInfo"]["drop level"]
 
-  put sDropInfoA["draggingInfo"] into tDraggingInfoA
-  union tDraggingInfoA with pDraggingInfoA
+  union pDraggingInfoA with sDropInfoA["draggingInfo"]
 
-  dispatch "ValidateNodeDrop" with tDraggingInfoA, tParentNodeId, tDropPosition
+  dispatch "ValidateNodeDrop" with pDraggingInfoA, tParentNodeId, tDropPosition
   if the result is false then return false
 
   put tParentNodeId into sDropInfoA["parentNodeId"]
