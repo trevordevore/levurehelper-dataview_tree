@@ -2518,6 +2518,8 @@ command ValidateRowDrop pDraggingInfoA, @pProposedRow, @pProposedDropOperation
   local tSourceNodeIds, tSourceDataView, tSourceStack, tDropIsAfterLastRow
   local tParentNodeA, tParentNodeId, tDropPosition
 
+  set the wholematches to true
+
   # Reset each time through
   put empty into sDropInfoA
 
@@ -2549,10 +2551,13 @@ command ValidateRowDrop pDraggingInfoA, @pProposedRow, @pProposedDropOperation
 
   # If proposed operation is "above" and the preceding row has a different level
   # then the preceding row becomes the proposed row and the operation becomes "on"
+  # as long as the preceding row isn't part of the dragged ids.
   if pProposedRow > 1 and pProposedDropOperation is "above" and \
         the dvRowLevel[pProposedRow] of me is not the dvRowLevel[pProposedRow-1] of me then
-    put pProposedRow - 1 into pProposedRow
-    put "on" into pProposedDropOperation
+    if sRowNodeIdLookupA[pProposedRow-1] is not among the items of tSourceNodeIds then
+      put pProposedRow - 1 into pProposedRow
+      put "on" into pProposedDropOperation
+    end if
   end if
 
   # Now determine the drop level
