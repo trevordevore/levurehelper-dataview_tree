@@ -2671,26 +2671,6 @@ private function _rowDropValidatesAgainstRules pSourceNodeIds, pProposedRow, pPr
 
   if pSourceNodeIds is empty then return false
 
-  /*
-  Enforce some rules where reorder is not allowed.
-    Is proposed row the number of rows + 1?
-      Yes:
-        Is the number of nodes being dragged > 1?
-          Yes: Drop allowed as it is possible that drop could change order.
-          No: Not allowed as drop wouldn't change order.
-      No:
-        Is node at proposed row first item in dragged nodes?
-          Yes:
-            Is drop above and number of dragged nodes > 1?
-              Yes: Drop allowed as it is possible that drop could change order.
-            No:
-              Is node at proposed row last item in dragged nodes?
-                Yes:
-                  Is drop operation "on" and number of dragged nodes > 1?
-                    Yes: Drop allowed as it is possible that drop could change order.
-        Otherwise:
-          No drop allowed
-  */
   put sRowNodeIdLookupA[pProposedRow] into tNodeId
 
   set the wholematches to true
