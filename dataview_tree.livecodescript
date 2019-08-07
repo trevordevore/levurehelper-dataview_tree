@@ -1115,6 +1115,26 @@ end dvNodeIsLeaf
 
 
 /**
+Summary: Returns the number of children at the root of the tree.
+
+Returns: Integer
+*/
+getProp dvRootChildCount
+  return the number of elements of sTreeA["root"]["children"]
+end dvRootChildCount
+
+
+/**
+Summary: Returns a numerically indexed array of node arrays at the root of the tree.
+
+Returns: Array
+*/
+getProp dvRootChildren
+  return sTreeA["root"]["children"]
+end dvRootChildren
+
+
+/**
 Summary: Returns the number of children that a row has.
 
 Returns: Integer
