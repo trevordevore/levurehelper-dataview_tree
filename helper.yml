@@ -7,4 +7,6 @@ libraries:
 ui:
   - filename: ide/row_templates.livecode
     distribute: false
+extensions:
+  - filename: tree_lines.lcm
 dependencies: DataView

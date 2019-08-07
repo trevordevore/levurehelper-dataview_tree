@@ -16,6 +16,8 @@ on FillInData pDataA, pRow
   else
     set the iconPath of widget "Toggle" of me to the uCollapsedIconPath of the dvControl of me
   end if
+
+  set the lineStyles of widget "TreeLines" of me to pDataA["tree line styles"]
 end FillInData
 
 
@@ -46,6 +48,10 @@ on LayoutControl pControlRect
   put the rect of field "Label" of me into tRect
   put item 3 of pControlRect into item 3 of tRect
   set the rect of field "Label" of me to tRect
+
+  put the rect of widget "TreeLines" of me into tRect
+  put item 3 of pControlRect into item 3 of tRect
+  set the rect of widget "TreeLines" of me to tRect
 
   put the rect of graphic "Background" of me into tRect
   put item 3 of pControlRect into item 3 of tRect

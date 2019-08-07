@@ -10,6 +10,7 @@ Returns: nothing
 */
 on FillInData pDataA, pRow
   set the text of field "Label" of me to pDataA["label"]
+  set the lineStyles of widget "TreeLines" of me to the dvNodeTreeLineStyles[pDataA["id"]] of me
 end FillInData
 
 
@@ -40,6 +41,10 @@ on LayoutControl pControlRect
   put the rect of field "Label" of me into tRect
   put item 3 of pControlRect into item 3 of tRect
   set the rect of field "Label" of me to tRect
+
+  put the rect of widget "TreeLines" of me into tRect
+  put item 3 of pControlRect into item 3 of tRect
+  set the rect of widget "TreeLines" of me to tRect
 
   put the rect of graphic "Background" of me into tRect
   put item 3 of pControlRect into item 3 of tRect
