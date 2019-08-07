@@ -6,6 +6,7 @@ local sNodeIdNodeLookupA # key = node id, value = node index array in sTreeA
 local sRowNodeIdLookupA # key = row, value = node id. Lookup in sNodeIdNodeLookupA.
 local sNodeIdRowLookupA # key = node id, value = row number
 local sRebuildLookupTable = false
+local sDropInfoA
 
 /**
 Summary: Sets the tree used to display source tree data.
@@ -2468,3 +2469,244 @@ private function _siblingInfo pNodeIndexA
 
   return tSiblingOrder,tChildCount
 end _siblingInfo
+
+
+constant kDataViewDragType = "dataview tree nodes"
+
+on dragStart
+  if the mouseControl is empty or the dvRowControl of the mouseControl is empty then exit dragStart
+  if word 1 of the target is "field" and not the lockText of the target then exit dragStart
+
+  local tTargetRows, tRow, tNodeId, tNodeA
+  local tNodeDescendantsA, tProposedNodeIds, tNodeIds
+
+  put the dvHilitedRows of me into tTargetRows
+  set the dvDragImageRow of me to item 1 of tTargetRows
+
+  if tTargetRows is empty then exit dragStart
+
+  repeat for each item tRow in tTargetRows
+    put sRowNodeIdLookupA[tRow] into tNodeId
+    put sNodeIdNodeLookupA[tNodeId] into tNodeA
+    put _descendantElements(tNodeA) into tNodeDescendantsA
+
+    if tNodeId is not among the items of tNodeIds then
+      put tNodeId & "," after tNodeIds
+    end if
+    if tNodeDescendantsA is an array then
+      repeat for each element tNodeA in tNodeDescendantsA
+        if sTreeA[tNodeA]["id"] is not among the items of tNodeIds then
+          put sTreeA[tNodeA]["id"] & "," after tNodeIds
+        end if
+      end repeat
+    end if
+  end repeat
+  delete the last char of tNodeIds
+
+  lock clipboard
+
+  set the dragData["private"] to kDataViewDragType & cr & tNodeIds & cr & the long id of me & cr & the short name of this stack
+  dispatch "TreeNodeDragStart" to me with tNodeIds
+
+  unlock clipboard
+
+  set the dvTrackDragReorder[tTargetRows] of me to true
+end dragStart
+
+
+command ValidateRowDrop pDraggingInfoA, @pProposedRow, @pProposedDropOperation
+  local tSourceNodeIds, tSourceDataView, tSourceStack, tDropIsAfterLastRow
+  local tParentNodeA, tParentNodeId, tDropPosition
+
+  # Reset each time through
+  put empty into sDropInfoA
+
+  # TODO: Make kDataViewDragType a property of DataView and check that it matches one on dragdata board.
+
+  if "private" is among the lines of the keys of the fulldragData then
+    lock clipboard
+    if line 1 of fulldragdata["private"] is kDataViewDragType then
+      put line 2 of fulldragData["private"] into tSourceNodeIds
+      put line 3 of fulldragData["private"] into tSourceDataView
+      put line 4 of fulldragData["private"] into tSourceStack
+    end if
+    unlock clipboard
+  end if
+
+  put (pProposedRow is the number of elements of sRowNodeIdLookupA \
+        and pProposedDropOperation is "on") \
+        or (pProposedRow is the number of elements of sRowNodeIdLookupA + 1 \
+        and pProposedDropOperation is "above") into tDropIsAfterLastRow
+
+  -- if not _rowDropValidatesAgainstRules(tSourceNodeIds, pProposedRow, pProposedDropOperation, tDropIsAfterLastRow) then
+  --   return false
+  -- end if
+
+  # No rules prohibit reorder so ask instance if drop is valid.
+  local tDraggingInfoA, tDropLevel
+
+  put _levelThatMouseIsAt(pDraggingInfoA["mouseH"]) into tDropLevel
+
+  # If proposed operation is "above" and the preceding row has a different level
+  # then the preceding row becomes the proposed row and the operation becomes "on"
+  if pProposedRow > 1 and pProposedDropOperation is "above" and \
+        the dvRowLevel[pProposedRow] of me is not the dvRowLevel[pProposedRow-1] of me then
+    put pProposedRow - 1 into pProposedRow
+    put "on" into pProposedDropOperation
+  end if
+
+  # Now determine the drop level
+  local tNodeId, tNodeA
+  local tProposedRowLevel, tMaxLevel, tMinLevel
+
+  put sRowNodeIdLookupA[pProposedRow] into tNodeId
+  put sNodeIdNodeLookupA[tNodeId] into tNodeA
+  put _nodeLevel(tNodeA) into tProposedRowLevel
+
+  # max level
+  put tProposedRowLevel into tMaxLevel
+  if pProposedDropOperation is "on" and not sTreeA[tNodeA]["is leaf"] then
+    add 1 to tMaxLevel
+  end if
+
+  # min level
+  if tDropIsAfterLastRow then
+    put 1 into tMinLevel
+  else if pProposedDropOperation is "on" then
+    put _nodeLevel(sNodeIdNodeLookupA[sRowNodeIdLookupA[pProposedRow+1]]) into tMinLevel
+  else
+    put tProposedRowLevel into tMinLevel
+  end if
+
+  # Finalize drop level
+  put max(tMinLevel, min(tDropLevel, tMaxLevel)) into tDropLevel
+
+  # Now that we know the level of the drop determine the target parent.
+  local tAncestorsA, tLevelDiff
+
+  put _ancestorElements(tNodeA) into tAncestorsA
+
+  if tProposedRowLevel is tDropLevel then
+    # Sibling of proposed drop row
+    put tAncestorsA[1] into tParentNodeA
+    put _nodePosition(tNodeA) into tDropPosition
+    if pProposedDropOperation is "on" then
+      add 1 to tDropPosition
+    end if
+  else if tProposedRowLevel+1 is tDropLevel then
+    # First child of proposed drop row
+    put tNodeA into tParentNodeA
+    put 1 into tDropPosition
+  else
+    # Ancestor of proposed drop row
+    put tProposedRowLevel - tDropLevel into tLevelDiff
+    put tAncestorsA[tLevelDiff] into tNodeA
+    if tDropLevel > 1 then
+      put tAncestorsA[tLevelDiff+1] into tParentNodeA
+    end if
+    put "on" into pProposedDropOperation
+    put _nodePosition(tNodeA) + 1 into tDropPosition
+  end if
+
+  if tParentNodeA is an array then
+    put sTreeA[tParentNodeA]["id"] into tParentNodeId
+  end if
+
+  put tSourceNodeIds into sDropInfoA["draggingInfo"]["ids"]
+  put tSourceDataView into sDropInfoA["draggingInfo"]["source control id"]
+  put tSourceStack into sDropInfoA["draggingInfo"]["source stack"]
+
+  put sDropInfoA["draggingInfo"] into tDraggingInfoA
+  union tDraggingInfoA with pDraggingInfoA
+
+  dispatch "ValidateNodeDrop" with tDraggingInfoA, tParentNodeId, tDropPosition
+  if the result is false then return false
+
+  put tParentNodeId into sDropInfoA["parentNodeId"]
+  put tDropPosition into sDropInfoA["childNodePosition"]
+
+  if tSourceDataView is not the long id of me then
+    # Turn on tracking for content from a different DataView
+    set the dvTrackDragReorder[empty] of me to true
+  end if
+
+  return true
+end ValidateRowDrop
+
+
+command AcceptRowDrop pDraggingInfoA, pRow, pDropOperation
+  dispatch "AcceptNodeDrop" with sDropInfoA["draggingInfo"], \
+        sDropInfoA["parentNodeId"], \
+        sDropInfoA["childNodePosition"]
+end AcceptRowDrop
+
+
+/**
+Summary: Calculates the level of the outline tha the mouse is at based on horizontal position.
+
+Returns: Integer >= 1
+*/
+private function _levelThatMouseIsAt pMouseH
+  local tXOffset, tRootH
+
+  put item 1 of the viewProp["line inset"] of me into tXOffset
+  add tXOffset to pMouseH
+  put the left of group "dvListMask" of me + tXOffset into tRootH
+  return max(1, (pMouseH - tRootH) div the viewProp["line spacing"] of me)
+end _levelThatMouseIsAt
+
+
+/**
+Summary: Checks for certain conditions which would automatically cancel a drop operation.
+
+Returns: Boolean
+*/
+private function _rowDropValidatesAgainstRules pSourceNodeIds, pProposedRow, pProposedDropOperation, pDropIsAfterLastRow
+  local tNodeId
+
+  if pSourceNodeIds is empty then return false
+
+  /*
+  Enforce some rules where reorder is not allowed.
+    Is proposed row the number of rows + 1?
+      Yes:
+        Is the number of nodes being dragged > 1?
+          Yes: Drop allowed as it is possible that drop could change order.
+          No: Not allowed as drop wouldn't change order.
+      No:
+        Is node at proposed row first item in dragged nodes?
+          Yes:
+            Is drop above and number of dragged nodes > 1?
+              Yes: Drop allowed as it is possible that drop could change order.
+            No:
+              Is node at proposed row last item in dragged nodes?
+                Yes:
+                  Is drop operation "on" and number of dragged nodes > 1?
+                    Yes: Drop allowed as it is possible that drop could change order.
+        Otherwise:
+          No drop allowed
+  */
+  put sRowNodeIdLookupA[pProposedRow] into tNodeId
+
+  if pDropIsAfterLastRow then
+    if the number of items of pSourceNodeIds is 1 then
+      return false
+    end if
+  else
+    set the wholematches to true
+
+    if tNodeId is the first item of pSourceNodeIds then
+      if not (pProposedDropOperation is "above" and the number of items of pSourceNodeIds > 1) then
+        return false
+      end if
+    else if tNodeId is the last item of pSourceNodeIds then
+      if not (pProposedDropOperation is "on" and the number of items of pSourceNodeIds > 1) then
+        return false
+      end if
+    else if tNodeId is among the items of pSourceNodeIds then
+      return false
+    end if
+  end if
+
+  return true
+end _rowDropValidatesAgainstRules
