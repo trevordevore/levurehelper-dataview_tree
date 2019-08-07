@@ -10,7 +10,7 @@ Returns: nothing
 */
 on FillInData pDataA, pRow
   set the text of field "Label" of me to pDataA["label"]
-  set the lineStyles of widget "TreeLines" of me to pDataA["tree line styles"]
+  set the lineStyles of widget "TreeLines" of me to the dvNodeTreeLineStyles[pDataA["id"]] of me
 end FillInData
 
 
