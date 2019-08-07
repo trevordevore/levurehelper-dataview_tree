@@ -1229,13 +1229,34 @@ end dvNodeChildren
 
 
 /**
-Summary: Returns a list of sibling nodes.
+Summary: Returns the child node at the specified position.
+
+Parameters:
+pNodeId: The parent node id. Leave empty to target the root of the tree.
+pPosition: The position of the child node.
+
+Returns: Array or empty if no child exists at that position.
+*/
+function GetChildNodeAtPosition pNodeId, pPosition
+  if pNodeId is empty then
+    put "root" into pNodeId[1]
+  else
+    put _findNodeOfId(pNodeId, true) into pNodeId
+  end if
+
+  if pPosition is -1 then
+    return sTreeA[pNodeId]["children"][the number of elements of sTreeA[pNodeId]["children"]]
+  else
+    return sTreeA[pNodeId]["children"][pPosition]
+  end if
+end GetChildNodeAtPosition
+
+
+/**
+Summary: Returns an array of all children of the parent of pNodeId.
 
 Parameters:
 pNodeId: The target node id.
-
-Description:
-The list contains node pNodeId.
 
 Returns: Array
 */
