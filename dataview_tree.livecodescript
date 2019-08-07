@@ -1150,7 +1150,7 @@ end dvRowChildren
 
 
 /**
-Summary: Returns a numerically indexed array of the index arrays of the child nodes of a row.
+Summary: Returns a numerically indexed array of node arrays.
 
 Parameters:
 pRow: The target row.
@@ -1186,7 +1186,7 @@ end dvNodeChildren
 
 
 /**
-Summary: Returns a numerically indexed array of the index arrays of the child nodes of a node.
+Summary: Returns a numerically indexed array of node arrays.
 
 Parameters:
 pRow: The target node id.
