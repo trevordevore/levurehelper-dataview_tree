@@ -2538,9 +2538,9 @@ command ValidateRowDrop pDraggingInfoA, @pProposedRow, @pProposedDropOperation
         or (pProposedRow is the number of elements of sRowNodeIdLookupA + 1 \
         and pProposedDropOperation is "above") into tDropIsAfterLastRow
 
-  -- if not _rowDropValidatesAgainstRules(tSourceNodeIds, pProposedRow, pProposedDropOperation, tDropIsAfterLastRow) then
-  --   return false
-  -- end if
+  if not _rowDropValidatesAgainstRules(tSourceNodeIds, pProposedRow, pProposedDropOperation, tDropIsAfterLastRow) then
+    return false
+  end if
 
   # No rules prohibit reorder so ask instance if drop is valid.
   local tDraggingInfoA, tDropLevel
@@ -2688,24 +2688,18 @@ private function _rowDropValidatesAgainstRules pSourceNodeIds, pProposedRow, pPr
   */
   put sRowNodeIdLookupA[pProposedRow] into tNodeId
 
-  if pDropIsAfterLastRow then
-    if the number of items of pSourceNodeIds is 1 then
-      return false
-    end if
-  else
-    set the wholematches to true
+  set the wholematches to true
 
-    if tNodeId is the first item of pSourceNodeIds then
-      if not (pProposedDropOperation is "above" and the number of items of pSourceNodeIds > 1) then
-        return false
-      end if
-    else if tNodeId is the last item of pSourceNodeIds then
-      if not (pProposedDropOperation is "on" and the number of items of pSourceNodeIds > 1) then
-        return false
-      end if
-    else if tNodeId is among the items of pSourceNodeIds then
+  if tNodeId is the first item of pSourceNodeIds then
+    if not (pProposedDropOperation is "above") then
       return false
     end if
+  else if tNodeId is the last item of pSourceNodeIds then
+    if not (pProposedDropOperation is "on") then
+      return false
+    end if
+  else if tNodeId is among the items of pSourceNodeIds then
+    return false
   end if
 
   return true
