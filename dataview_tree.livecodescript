@@ -574,6 +574,7 @@ command PreDragImageSnapshot
   if there is a widget "TreeLines" of the target then
     set the visible of widget "TreeLines" of the target to false
   end if
+  pass PreDragImageSnapshot
 end PreDragImageSnapshot
 
 
@@ -586,6 +587,7 @@ command PostDragImageSnapshot
   if there is a widget "TreeLines" of the target then
     set the visible of widget "TreeLines" of the target to true
   end if
+  pass PostDragImageSnapshot
 end PostDragImageSnapshot
 
 
