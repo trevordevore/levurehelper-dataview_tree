@@ -2677,7 +2677,7 @@ private function _levelThatMouseIsAt pMouseH
   put max(0, item 1 of the viewProp["line inset"] of me) into tXOffset
   add tXOffset to pMouseH
   put the left of group "dvListMask" of me + tXOffset into tRootH
-  return max(1, (pMouseH - tRootH) div min(1, the viewProp["line spacing"] of me))
+  return max(1, (pMouseH - tRootH) div max(1, the viewProp["line spacing"] of me))
 end _levelThatMouseIsAt
 
 
