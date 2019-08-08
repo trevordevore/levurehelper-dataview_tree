@@ -570,11 +570,10 @@ Summary: Hide the treeline widget before creating the drag image for a row contr
 
 Returns: nothing
 */
-command PreDragImageSnapshot
-  if there is a widget "TreeLines" of the target then
-    set the visible of widget "TreeLines" of the target to false
+before PreDragImageSnapshot
+  if there is a control "TreeLines" of the target then
+    set the visible of control "TreeLines" of the target to false
   end if
-  pass PreDragImageSnapshot
 end PreDragImageSnapshot
 
 
@@ -583,11 +582,10 @@ Summary: Show the treeline widget after creating the drag image for a row contro
 
 Returns: nothing
 */
-command PostDragImageSnapshot
-  if there is a widget "TreeLines" of the target then
-    set the visible of widget "TreeLines" of the target to true
+before PostDragImageSnapshot
+  if there is a control "TreeLines" of the target then
+    set the visible of control "TreeLines" of the target to true
   end if
-  pass PostDragImageSnapshot
 end PostDragImageSnapshot
 
 
