@@ -2536,6 +2536,29 @@ on dragStart
 end dragStart
 
 
+/**
+Summary: Looks for drags from one DataView tree to another.
+
+Returns: nothing
+*/
+on dragMove
+  local tSourceDataView
+
+  if "private" is among the lines of the keys of the fulldragData then
+    lock clipboard
+    if line 1 of fulldragdata["private"] is sDataViewDragType then
+      put line 3 of fulldragData["private"] into tSourceDataView
+    end if
+    unlock clipboard
+  end if
+
+  if tSourceDataView is not the long id of me then
+    # Turn on tracking for content from a different DataView
+    set the dvTrackDragReorder[empty] of me to true
+  end if
+end dragMove
+
+
 command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
   local tSourceNodeIds, tSourceDataView, tSourceStack, tDropIsAfterLastRow
   local tParentNodeA, tParentNodeId, tDropPosition
@@ -2651,11 +2674,6 @@ command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
 
   put tParentNodeId into sDropInfoA["parentNodeId"]
   put tDropPosition into sDropInfoA["childNodePosition"]
-
-  if tSourceDataView is not the long id of me then
-    # Turn on tracking for content from a different DataView
-    set the dvTrackDragReorder[empty] of me to true
-  end if
 
   return true
 end ValidateRowDrop
