@@ -2662,12 +2662,10 @@ command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
     put sTreeA[tParentNodeA]["id"] into tParentNodeId
   end if
 
-  put tSourceNodeIds into sDropInfoA["draggingInfo"]["ids"]
-  put tSourceDataView into sDropInfoA["draggingInfo"]["source control id"]
-  put tSourceStack into sDropInfoA["draggingInfo"]["source stack"]
-  put tDropLevel into sDropInfoA["draggingInfo"]["drop level"]
-
-  union pDraggingInfoA with sDropInfoA["draggingInfo"]
+  put tSourceNodeIds into pDraggingInfoA["ids"]
+  put tSourceDataView into pDraggingInfoA["source control id"]
+  put tSourceStack into pDraggingInfoA["source stack"]
+  put tDropLevel into pDraggingInfoA["drop level"]
 
   dispatch "ValidateNodeDrop" with pDraggingInfoA, tParentNodeId, tDropPosition
   if the result is false then return false
@@ -2680,7 +2678,6 @@ end ValidateRowDrop
 
 
 command AcceptRowDrop pDraggingInfoA, pRow, pDropOperation
-  union pDraggingInfoA with sDropInfoA["draggingInfo"]
   dispatch "AcceptNodeDrop" with pDraggingInfoA, \
         sDropInfoA["parentNodeId"], \
         sDropInfoA["childNodePosition"]
