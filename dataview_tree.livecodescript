@@ -2493,6 +2493,7 @@ keys in the `dragData` property.
 Returns: nothing
 */
 on dragStart
+  if the viewProp["allow drag reordering"] of me is false then exit dragStart
   if the mouseControl is empty or the dvRowControl of the mouseControl is empty then exit dragStart
   if word 1 of the target is "field" and not the lockText of the target then exit dragStart
 
