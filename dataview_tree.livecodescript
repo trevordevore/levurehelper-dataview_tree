@@ -2472,9 +2472,26 @@ end _siblingInfo
 
 
 constant kDataViewDragType = "dataview tree nodes"
-
 local sDataViewDragType
 
+/**
+Summary: Starts a drag and drop operation using the nodes associated with the selected rows.
+
+Description:
+This builds on top of the drag and drop support built into the DataView. The
+`dragData["private"]` will be set to a string used to carry out the drag operation. The first line
+will be `the viewProp["drop operation identifier"]` property of the view. If that is empty then the
+default value of `dataview tree nodes` is used. The second line is the list of node ids
+that are being dragged. The third line is the long id of the source DataView Tree and the fourth
+line is the short name of the source stack.
+
+After the `dragData["private"]` is set, but before the clipboard is unlocked, the
+`SetDragDataForNodeDrag` message will be sent to the target of the `dragStart` message with
+the list of node ids as the first parameter. Use this message to set values for additional
+keys in the `dragData` property.
+
+Returns: nothing
+*/
 on dragStart
   if the mouseControl is empty or the dvRowControl of the mouseControl is empty then exit dragStart
   if word 1 of the target is "field" and not the lockText of the target then exit dragStart
@@ -2511,7 +2528,7 @@ on dragStart
   if sDataViewDragType is empty then put kDataViewDragType into sDataViewDragType
 
   set the dragData["private"] to sDataViewDragType & cr & tNodeIds & cr & the long id of me & cr & the short name of this stack
-  dispatch "TreeNodeDragStart" to me with tNodeIds
+  dispatch "SetDragDataForNodeDrag" to the target with tNodeIds
 
   unlock clipboard
 
