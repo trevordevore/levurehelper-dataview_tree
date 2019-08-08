@@ -2532,7 +2532,7 @@ on dragStart
 
   unlock clipboard
 
-  set the dvTrackDragReorder[tTargetRows] of me to true
+  set the dvTrackDragReorder of me to true
 end dragStart
 
 
@@ -2554,7 +2554,7 @@ on dragMove
 
   if tSourceDataView is not the long id of me then
     # Turn on tracking for content from a different DataView
-    set the dvTrackDragReorder[empty] of me to true
+    set the dvTrackDragReorder of me to true
   end if
 end dragMove
 
