@@ -2588,11 +2588,6 @@ command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
     return false
   end if
 
-  # No rules prohibit reorder so ask instance if drop is valid.
-  local tDropLevel
-
-  put _levelThatMouseIsAt(pDraggingInfoA["mouseH"]) into tDropLevel
-
   # If dropping after last row or if proposed operation is "above" and the preceding
   # row has a different level then the preceding row becomes the proposed row and
   # the operation becomes "on" as long as the preceding row isn't part of the dragged ids.
@@ -2606,9 +2601,12 @@ command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
     end if
   end if
 
+  # No rules prohibit reorder so ask instance if drop is valid.
   # Now determine the drop level
-  local tNodeId, tNodeA
+  local tDropLevel, tNodeId, tNodeA
   local tProposedRowLevel, tMaxLevel, tMinLevel
+
+  put _levelThatMouseIsAt(pDraggingInfoA["mouseH"]) into tDropLevel
 
   put sRowNodeIdLookupA[pProposedRow] into tNodeId
   put sNodeIdNodeLookupA[tNodeId] into tNodeA
@@ -2721,6 +2719,16 @@ private function _rowDropValidatesAgainstRules pSourceNodeIds, pProposedRow, pPr
   else if tNodeId is the last item of pSourceNodeIds then
     if not (pProposedDropOperation is "on") then
       return false
+    end if
+  else if pDropIsAfterLastRow then
+    # If dropping below the last node then make sure that the parent of the last row isn't part
+    # of the dragoperation. The parent cannot become a descendant of itself.
+    local tParentNodeA
+    put _parentNodeIndex( sNodeIdNodeLookupA[sRowNodeIdLookupA[pProposedRow-1]] ) into tParentNodeA
+    if tParentNodeA is an array then
+      if sTreeA[tParentNodeA]["id"] is among the items of pSourceNodeIds then
+        return false
+      end if
     end if
   else if tNodeId is among the items of pSourceNodeIds then
     return false
