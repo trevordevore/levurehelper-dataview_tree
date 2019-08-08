@@ -142,6 +142,47 @@ put 4 into tRow
 dispatch "ToggleRowIsExpanded" to group "MyDataView" with tRow
 ```
 
+## The Drag Reordering API
+
+The DataView Tree has a built in API for drag reordering. The API is an extension of the API built into the DataView. Drag reordering will be turned on by default. If you want to turn it off then set `the viewProp["allow drag reordering"]` of the DataView Tree group to `false`.
+
+If you plan on using drag reordering it is a good idea to set the `viewProp["drop operation identifier"]` property of the DataView Tree. This will uniquely identify the drag operation for that specific tree. For example, you might set the property to `categories` if your tree displays categories. If no value is set then `dataview tree nodes` is used. This value will be assigned to line 1 of the `dragData["private"]` when the user starts dragging a node in the tree.
+
+### ValidateNodeDrop
+
+The DataView Tree will process the `ValidateRowDrop` message sent by the DataView behavior. You should not handle this message. Instead, the DataView Tree dispatches the `ValidateNodeDrop` message with the following parameters:
+
+1. pDraggingInfoA: Array with `action` (dragAction), `mouseH`, and `mouseV` `ids`, `drop level`, `source control id`, and `source stack` keys. The `mouseH` and `mouseV` keys are the same parameters passed to `dragMove`. The `ids` is a comma delimited list of node ids that are being dragged. If the user clicked on a parent node all descendant node ids will be included in this list as well. The `drop level` is the level that the drop is will occur at. `source control id` is the long id of the DataView that started the drag operation. `source stack` is the short name of the stack the control
+2. pProposedParentNodeId: The proposed id of the parent that the ids being dragged will be associated with.
+3. pProposedChildPosition: The proposed child position within the parent that the first id in the ids being dragged should be assigned to.
+
+If no drop should occur then return `false`. You can also define any of the parameters as being passed by reference (using the `@` symbol) and modify them. This means you can change the proposed parent id or child position based on your needs.
+
+### AcceptNodeDrop
+
+When the `AcceptRowDrop` message is sent from the DataView behavior the DataView Tree will process it and dispatch the `AcceptNodeDrop` message. It is passed the same parameters as `ValidateNodeDrop`.
+
+This handler is where you can modify the tree and your data source if needed. Here is an example that moves all of the nodes being dragged under the new parent while maintaining any parent/child relationships in the nodes being dragged.
+
+```
+command AcceptNodeDrop pDraggingInfoA, pParentNodeId, pChildPosition
+  local tId
+
+  set the wholematches to true
+
+  # Only move nodes whose parent isn't part of the ids being dragged.
+  # This will maintain parent/child hierarchy when the nodes are moved.
+  repeat for each item tId in pDraggingInfoA["ids"]
+    if the dvNodeParentNode[tId] of me is not among the items of pDraggingInfoA["ids"] then
+      MoveNode tId, pParentNodeId, pChildPosition, false
+      add 1 to pChildPosition
+    end if
+  end repeat
+
+  RefreshView
+end AcceptNodeDrop
+```
+
 ## API
 
 - [CollapseAllNodes](#CollapseAllNodes)
