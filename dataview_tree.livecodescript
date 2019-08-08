@@ -2662,7 +2662,8 @@ end ValidateRowDrop
 
 
 command AcceptRowDrop pDraggingInfoA, pRow, pDropOperation
-  dispatch "AcceptNodeDrop" with sDropInfoA["draggingInfo"], \
+  union pDraggingInfoA with sDropInfoA["draggingInfo"]
+  dispatch "AcceptNodeDrop" with pDraggingInfoA, \
         sDropInfoA["parentNodeId"], \
         sDropInfoA["childNodePosition"]
 end AcceptRowDrop
