@@ -2473,6 +2473,8 @@ end _siblingInfo
 
 constant kDataViewDragType = "dataview tree nodes"
 
+local sDataViewDragType
+
 on dragStart
   if the mouseControl is empty or the dvRowControl of the mouseControl is empty then exit dragStart
   if word 1 of the target is "field" and not the lockText of the target then exit dragStart
@@ -2505,7 +2507,10 @@ on dragStart
 
   lock clipboard
 
-  set the dragData["private"] to kDataViewDragType & cr & tNodeIds & cr & the long id of me & cr & the short name of this stack
+  put the viewProp["drop operation identifier"] of me into sDataViewDragType
+  if sDataViewDragType is empty then put kDataViewDragType into sDataViewDragType
+
+  set the dragData["private"] to sDataViewDragType & cr & tNodeIds & cr & the long id of me & cr & the short name of this stack
   dispatch "TreeNodeDragStart" to me with tNodeIds
 
   unlock clipboard
@@ -2523,11 +2528,9 @@ command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
   # Reset each time through
   put empty into sDropInfoA
 
-  # TODO: Make kDataViewDragType a property of DataView and check that it matches one on dragdata board.
-
   if "private" is among the lines of the keys of the fulldragData then
     lock clipboard
-    if line 1 of fulldragdata["private"] is kDataViewDragType then
+    if line 1 of fulldragdata["private"] is sDataViewDragType then
       put line 2 of fulldragData["private"] into tSourceNodeIds
       put line 3 of fulldragData["private"] into tSourceDataView
       put line 4 of fulldragData["private"] into tSourceStack
