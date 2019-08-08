@@ -2474,21 +2474,28 @@ end _siblingInfo
 constant kDataViewDragType = "dataview tree nodes"
 local sDataViewDragType
 
+
 /**
 Summary: Starts a drag and drop operation using the nodes associated with the selected rows.
 
 Description:
 This builds on top of the drag and drop support built into the DataView. The
-`dragData["private"]` will be set to a string used to carry out the drag operation. The first line
+`fullDragData["private"]` will be set to a string used to carry out the drag operation. The first line
 will be `the viewProp["drop operation identifier"]` property of the view. If that is empty then the
 default value of `dataview tree nodes` is used. The second line is the list of node ids
 that are being dragged. The third line is the long id of the source DataView Tree and the fourth
 line is the short name of the source stack.
 
-After the `dragData["private"]` is set, but before the clipboard is unlocked, the
-`SetDragDataForNodeDrag` message will be sent to the target of the `dragStart` message with
-the list of node ids as the first parameter. Use this message to set values for additional
-keys in the `dragData` property.
+After the clipboard is locked the `nodeDragStart` message will be sent to the target of the `dragStart` message.
+It will be passed three parameters:
+
+- pRootNodeIds: The ids at the root of the nodes being dragged. These are nodes which can be moved witout affecting the parent/child relationships of the nodes being dragged.
+- pNodeIds: The ids of the nodes that are being dragged.
+- @rUserData: Set this parameter to a value which will be included with the internal data in the `fullDragData["private"]` property. Cannot have more than 1 line.
+
+You can use this message to set additional `dragData` keys or to
+set the `@rUserData` parameter. The `@rUserData` parameter will appear in the `pDraggingInfoA["user data"]` key
+in the parameter passed to `ValidateNodeDrop` and `AcceptNodeDrop`.
 
 Returns: nothing
 */
@@ -2498,17 +2505,39 @@ on dragStart
   if word 1 of the target is "field" and not the lockText of the target then exit dragStart
 
   local tTargetRows, tRow, tNodeId, tNodeA
-  local tNodeDescendantsA, tProposedNodeIds, tNodeIds
+  local tNodeDescendantsA, tProposedNodeIds, tNodeIds, tRootNodeIds, tDescendantIds
 
   put the dvHilitedRows of me into tTargetRows
   set the dvDragImageRow of me to item 1 of tTargetRows
 
   if tTargetRows is empty then exit dragStart
 
+  # First create a list of all descendant node ids. This list will be used
+  # to determine which of the selected rows is a root level node relative
+  # to the nodes that are being dragged. These are the nodes that can be moved
+  # without altering any of the parent/child relationships in the dragged data.
   repeat for each item tRow in tTargetRows
     put sRowNodeIdLookupA[tRow] into tNodeId
     put sNodeIdNodeLookupA[tNodeId] into tNodeA
     put _descendantElements(tNodeA) into tNodeDescendantsA
+
+    if tNodeDescendantsA is an array then
+      repeat for each element tNodeA in tNodeDescendantsA
+        # We don't mind duplicates in this list
+        put sTreeA[tNodeA]["id"] & "," after tDescendantIds
+      end repeat
+    end if
+  end repeat
+
+  # Now build up the list of all node ids and root node ids.
+  repeat for each item tRow in tTargetRows
+    put sRowNodeIdLookupA[tRow] into tNodeId
+    put sNodeIdNodeLookupA[tNodeId] into tNodeA
+    put _descendantElements(tNodeA) into tNodeDescendantsA
+
+    if tNodeId is not among the items of tDescendantIds then
+      put tNodeId & "," after tRootNodeIds
+    end if
 
     if tNodeId is not among the items of tNodeIds then
       put tNodeId & "," after tNodeIds
@@ -2521,6 +2550,7 @@ on dragStart
       end repeat
     end if
   end repeat
+  delete the last char of tRootNodeIds
   delete the last char of tNodeIds
 
   lock clipboard
@@ -2528,8 +2558,15 @@ on dragStart
   put the viewProp["drop operation identifier"] of me into sDataViewDragType
   if sDataViewDragType is empty then put kDataViewDragType into sDataViewDragType
 
-  set the dragData["private"] to sDataViewDragType & cr & tNodeIds & cr & the long id of me & cr & the short name of this stack
-  dispatch "SetDragDataForNodeDrag" to the target with tNodeIds
+  local tUserData
+
+  dispatch "nodeDragStart" to the target with tRootNodeIds, tNodeIds, tUserData
+  set the fullDragData["private"] to sDataViewDragType & cr & \
+        tRootNodeIds & cr & \
+        tNodeIds & cr & \
+        the long id of me & cr & \
+        the short name of this stack & cr & \
+        line 1 of tUserData
 
   unlock clipboard
 
@@ -2548,7 +2585,7 @@ on dragMove
   if "private" is among the lines of the keys of the fulldragData then
     lock clipboard
     if line 1 of fulldragdata["private"] is sDataViewDragType then
-      put line 3 of fulldragData["private"] into tSourceDataView
+      put line 4 of fulldragData["private"] into tSourceDataView
     end if
     unlock clipboard
   end if
@@ -2560,9 +2597,9 @@ on dragMove
 end dragMove
 
 
-command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
-  local tSourceNodeIds, tSourceDataView, tSourceStack, tDropIsAfterLastRow
-  local tParentNodeA, tParentNodeId, tDropPosition
+command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
+  local tSourceRootNodeIds, tSourceNodeIds, tSourceDataView, tSourceStack, tUserData
+  local tDropIsAfterLastRow, tParentNodeA, tParentNodeId, tDropPosition
 
   set the wholematches to true
 
@@ -2572,32 +2609,50 @@ command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
   if "private" is among the lines of the keys of the fulldragData then
     lock clipboard
     if line 1 of fulldragdata["private"] is sDataViewDragType then
-      put line 2 of fulldragData["private"] into tSourceNodeIds
-      put line 3 of fulldragData["private"] into tSourceDataView
-      put line 4 of fulldragData["private"] into tSourceStack
+      put line 2 of fulldragData["private"] into tSourceRootNodeIds
+      put line 3 of fulldragData["private"] into tSourceNodeIds
+      put line 4 of fulldragData["private"] into tSourceDataView
+      put line 5 of fulldragData["private"] into tSourceStack
+      put line 6 of fulldragData["private"] into tUserData
     end if
     unlock clipboard
   end if
 
-  put (pProposedRow is the number of elements of sRowNodeIdLookupA \
-        and pProposedDropOperation is "on") \
-        or (pProposedRow is the number of elements of sRowNodeIdLookupA + 1 \
-        and pProposedDropOperation is "above") into tDropIsAfterLastRow
+  put (xProposedRow is the number of elements of sRowNodeIdLookupA \
+        and xProposedDropOperation is "on") \
+        or (xProposedRow is the number of elements of sRowNodeIdLookupA + 1 \
+        and xProposedDropOperation is "above") into tDropIsAfterLastRow
 
-  if not _rowDropValidatesAgainstRules(tSourceNodeIds, pProposedRow, pProposedDropOperation, tDropIsAfterLastRow) then
+  if not _rowDropValidatesAgainstRules(tSourceRootNodeIds, tSourceNodeIds, xProposedRow, xProposedDropOperation, tDropIsAfterLastRow) then
     return false
   end if
 
   # If dropping after last row or if proposed operation is "above" and the preceding
-  # row has a different level then the preceding row becomes the proposed row and
-  # the operation becomes "on" as long as the preceding row isn't part of the dragged ids.
-  if tDropIsAfterLastRow or \
-        (pProposedRow > 1 and pProposedDropOperation is "above" and \
-        the dvRowLevel[pProposedRow] of me is not the dvRowLevel[pProposedRow-1] of me) then
+  # row has a different level or same level and is a headng then the preceding row becomes
+  # the proposed row and the operation becomes "on" as long as the preceding row isn't
+  # part of the dragged ids.
+  local tUpdateProposedRow = false
+  local tPrevRowNodeA, tPrevRowLevel
+
+  put tDropIsAfterLastRow into tUpdateProposedRow
+  if not tUpdateProposedRow then
+    if xProposedRow > 1 and xProposedDropOperation is "above" then
+      put sNodeIdNodeLookupA[sRowNodeIdLookupA[xProposedRow-1]] into tPrevRowNodeA
+      put _nodeLevel(tPrevRowNodeA) into tPrevRowLevel
+      put the dvRowLevel[xProposedRow] of me is not tPrevRowLevel into tUpdateProposedRow
+
+      if not tUpdateProposedRow then
+        put the dvRowLevel[xProposedRow] of me is tPrevRowLevel and \
+              not sTreeA[tPrevRowNodeA]["is leaf"] into tUpdateProposedRow
+      end if
+    end if
+  end if
+
+  if tUpdateProposedRow then
     if tDropIsAfterLastRow or \
-          (sRowNodeIdLookupA[pProposedRow-1] is not among the items of tSourceNodeIds) then
-      put pProposedRow - 1 into pProposedRow
-      put "on" into pProposedDropOperation
+          (sRowNodeIdLookupA[xProposedRow-1] is not among the items of tSourceNodeIds) then
+      put xProposedRow - 1 into xProposedRow
+      put "on" into xProposedDropOperation
     end if
   end if
 
@@ -2606,23 +2661,23 @@ command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
   local tDropLevel, tNodeId, tNodeA
   local tProposedRowLevel, tMaxLevel, tMinLevel
 
-  put _levelThatMouseIsAt(pDraggingInfoA["mouseH"]) into tDropLevel
+  put _levelThatMouseIsAt(xDraggingInfoA["mouseH"]) into tDropLevel
 
-  put sRowNodeIdLookupA[pProposedRow] into tNodeId
+  put sRowNodeIdLookupA[xProposedRow] into tNodeId
   put sNodeIdNodeLookupA[tNodeId] into tNodeA
   put _nodeLevel(tNodeA) into tProposedRowLevel
 
   # max level
   put tProposedRowLevel into tMaxLevel
-  if pProposedDropOperation is "on" and not sTreeA[tNodeA]["is leaf"] then
+  if xProposedDropOperation is "on" and not sTreeA[tNodeA]["is leaf"] then
     add 1 to tMaxLevel
   end if
 
   # min level
   if tDropIsAfterLastRow then
     put 1 into tMinLevel
-  else if pProposedDropOperation is "on" then
-    put _nodeLevel(sNodeIdNodeLookupA[sRowNodeIdLookupA[pProposedRow+1]]) into tMinLevel
+  else if xProposedDropOperation is "on" then
+    put _nodeLevel(sNodeIdNodeLookupA[sRowNodeIdLookupA[xProposedRow+1]]) into tMinLevel
   else
     put tProposedRowLevel into tMinLevel
   end if
@@ -2639,7 +2694,7 @@ command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
     # Sibling of proposed drop row
     put tAncestorsA[1] into tParentNodeA
     put _nodePosition(tNodeA) into tDropPosition
-    if pProposedDropOperation is "on" then
+    if xProposedDropOperation is "on" then
       add 1 to tDropPosition
     end if
   else if tProposedRowLevel+1 is tDropLevel then
@@ -2653,7 +2708,7 @@ command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
     if tDropLevel > 1 then
       put tAncestorsA[tLevelDiff+1] into tParentNodeA
     end if
-    put "on" into pProposedDropOperation
+    put "on" into xProposedDropOperation
     put _nodePosition(tNodeA) + 1 into tDropPosition
   end if
 
@@ -2661,12 +2716,14 @@ command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
     put sTreeA[tParentNodeA]["id"] into tParentNodeId
   end if
 
-  put tSourceNodeIds into pDraggingInfoA["ids"]
-  put tSourceDataView into pDraggingInfoA["source control id"]
-  put tSourceStack into pDraggingInfoA["source stack"]
-  put tDropLevel into pDraggingInfoA["drop level"]
+  put tSourceRootNodeIds into xDraggingInfoA["root ids"]
+  put tSourceNodeIds into xDraggingInfoA["ids"]
+  put tSourceDataView into xDraggingInfoA["source control id"]
+  put tSourceStack into xDraggingInfoA["source stack"]
+  put tDropLevel into xDraggingInfoA["drop level"]
+  put tUserData into xDraggingInfoA["user data"]
 
-  dispatch "ValidateNodeDrop" with pDraggingInfoA, tParentNodeId, tDropPosition
+  dispatch "ValidateNodeDrop" with xDraggingInfoA, tParentNodeId, tDropPosition
   if the result is false then return false
 
   put tParentNodeId into sDropInfoA["parentNodeId"]
@@ -2703,7 +2760,7 @@ Summary: Checks for certain conditions which would automatically cancel a drop o
 
 Returns: Boolean
 */
-private function _rowDropValidatesAgainstRules pSourceNodeIds, pProposedRow, pProposedDropOperation, pDropIsAfterLastRow
+private function _rowDropValidatesAgainstRules pSourceRootNodeIds, pSourceNodeIds, pProposedRow, pProposedDropOperation, pDropIsAfterLastRow
   local tNodeId
 
   if pSourceNodeIds is empty then return false
