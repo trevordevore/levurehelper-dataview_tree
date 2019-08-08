@@ -152,7 +152,7 @@ If you plan on using drag reordering it is a good idea to set the `viewProp["dro
 
 The DataView Tree will process the `ValidateRowDrop` message sent by the DataView behavior. You should not handle this message. Instead, the DataView Tree dispatches the `ValidateNodeDrop` message with the following parameters:
 
-1. pDraggingInfoA: Array with `action` (dragAction), `mouseH`, and `mouseV` `ids`, `drop level`, `source control id`, and `source stack` keys. The `mouseH` and `mouseV` keys are the same parameters passed to `dragMove`. The `ids` is a comma delimited list of node ids that are being dragged. If the user clicked on a parent node all descendant node ids will be included in this list as well. The `drop level` is the level that the drop is will occur at. `source control id` is the long id of the DataView that started the drag operation. `source stack` is the short name of the stack the control
+1. pDraggingInfoA: Array with `action` (dragAction), `mouseH`, and `mouseV` `ids`, `root ids`, `drop level`, `source control id`, and `source stack` keys. The `mouseH` and `mouseV` keys are the same parameters passed to `dragMove`. The `ids` is a comma delimited list of node ids that are being dragged. If the user clicked on a parent node all descendant node ids will be included in this list as well. `root ids` are the ids which can be moved without affecting any of the parent/child relationships in the dragged nodes. The `drop level` is the level that the drop is will occur at. `source control id` is the long id of the DataView that started the drag operation. `source stack` is the short name of the stack the control
 2. pProposedParentNodeId: The proposed id of the parent that the ids being dragged will be associated with.
 3. pProposedChildPosition: The proposed child position within the parent that the first id in the ids being dragged should be assigned to.
 
@@ -170,13 +170,11 @@ command AcceptNodeDrop pDraggingInfoA, pParentNodeId, pChildPosition
 
   set the wholematches to true
 
-  # Only move nodes whose parent isn't part of the ids being dragged.
-  # This will maintain parent/child hierarchy when the nodes are moved.
-  repeat for each item tId in pDraggingInfoA["ids"]
-    if the dvNodeParentNode[tId] of me is not among the items of pDraggingInfoA["ids"] then
-      MoveNode tId, pParentNodeId, pChildPosition, false
-      add 1 to pChildPosition
-    end if
+  # Only move nodes at the root of the nodes being dragged.
+  # This will maintain parent/child hierarchy.
+  repeat for each item tId in pDraggingInfoA["root ids"]
+    MoveNode tId, pParentNodeId, pChildPosition, false
+    add 1 to pChildPosition
   end repeat
 
   RefreshView
