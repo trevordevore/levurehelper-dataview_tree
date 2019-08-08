@@ -2569,12 +2569,14 @@ command ValidateRowDrop @pDraggingInfoA, @pProposedRow, @pProposedDropOperation
 
   put _levelThatMouseIsAt(pDraggingInfoA["mouseH"]) into tDropLevel
 
-  # If proposed operation is "above" and the preceding row has a different level
-  # then the preceding row becomes the proposed row and the operation becomes "on"
-  # as long as the preceding row isn't part of the dragged ids.
-  if pProposedRow > 1 and pProposedDropOperation is "above" and \
-        the dvRowLevel[pProposedRow] of me is not the dvRowLevel[pProposedRow-1] of me then
-    if sRowNodeIdLookupA[pProposedRow-1] is not among the items of tSourceNodeIds then
+  # If dropping after last row or if proposed operation is "above" and the preceding
+  # row has a different level then the preceding row becomes the proposed row and
+  # the operation becomes "on" as long as the preceding row isn't part of the dragged ids.
+  if tDropIsAfterLastRow or \
+        (pProposedRow > 1 and pProposedDropOperation is "above" and \
+        the dvRowLevel[pProposedRow] of me is not the dvRowLevel[pProposedRow-1] of me) then
+    if tDropIsAfterLastRow or \
+          (sRowNodeIdLookupA[pProposedRow-1] is not among the items of tSourceNodeIds) then
       put pProposedRow - 1 into pProposedRow
       put "on" into pProposedDropOperation
     end if
