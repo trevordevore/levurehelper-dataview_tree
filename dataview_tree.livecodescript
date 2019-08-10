@@ -1709,7 +1709,54 @@ end dvHilitedId
 
 
 /**
-Summary: Returns the `id` property of the selected row(s).
+Summary: Returns all ids that are implicitly included in the currently hilited rows.
+
+Description:
+When a parent node is selected an action such as "delete" or "move" would also
+move the descendants of the parent. This property returns all ids implied
+by the current selection.
+
+Returns: Comma-delimited list
+*/
+getProp dvEffectiveHilitedIds
+  return _effectiveHilitedIds()
+end dvEffectiveHilitedIds
+
+
+/**
+Summary: Returns the list of all ids inherent in the current selection.
+
+Description:
+The list that is returned includes the descendants of selected rows.
+
+Returns: Comma-delimited list
+*/
+private function _effectiveHilitedIds
+  local tRow, tNodeIds, tNodeId, tNodeA, tNodeDescendantsA
+
+  repeat for each item tRow in the dvHilitedRows of me
+    put sRowNodeIdLookupA[tRow] into tNodeId
+    put sNodeIdNodeLookupA[tNodeId] into tNodeA
+    put _descendantElements(tNodeA) into tNodeDescendantsA
+
+    if tNodeId is not among the items of tNodeIds then
+      put tNodeId & "," after tNodeIds
+    end if
+
+    if tNodeDescendantsA is an array then
+      repeat for each element tNodeA in tNodeDescendantsA
+        if sTreeA[tNodeA]["id"] is not among the items of tNodeIds then
+          put sTreeA[tNodeA]["id"] & "," after tNodeIds
+        end if
+      end repeat
+    end if
+  end repeat
+  delete the last char of tNodeIds
+
+  return tNodeIds
+end _effectiveHilitedIds
+
+
 /**
 Summary: Returns all data for each selected row.
 
