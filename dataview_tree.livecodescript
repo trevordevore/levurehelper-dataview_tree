@@ -1710,11 +1710,13 @@ end dvHilitedId
 
 /**
 Summary: Returns the `id` property of the selected row(s).
+/**
+Summary: Returns all data for each selected row.
 
 Description:
 If not rows are selected then empty is returned.
 
-Returns: Comma-delimited list of integers
+Returns: Array or numerically indexed array of node arrays.
 */
 getProp dvHilitedData
   local tRow, tRows, tIds
