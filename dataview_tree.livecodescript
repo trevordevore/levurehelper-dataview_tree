@@ -1466,19 +1466,29 @@ end dvRowChildRows
 
 
 /**
-Summary: Returns an integer representing the position of `pRow` amongst it's siblings.
+Summary: Returns the position of the node relative to its parent.
+
+Parameters:
+pNodeId: The target node id.
+
+Returns: Integer
+*/
+getProp dvNodePosition[pNodeId]
+  return _nodePosition(sNodeIdNodeLookupA[pNodeId])
+end dvNodePosition
+
+
+/**
+Summary: Returns the position of the row relative to its parent.
 
 Parameters:
 pRow: The target row.
 
-Description:
-If pRow is the third child of it's parent then this property would return `3`.
-
 Returns: Integer
 */
-getProp dvRowSiblingOrder[pRow]
+getProp dvRowPosition[pRow]
   return _nodePosition(sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]])
-end dvRowSiblingOrder
+end dvRowPosition
 
 
 /**
@@ -2178,6 +2188,22 @@ private function _nodeLevel pNodeIndexA
 
   return tLevel
 end _nodeLevel
+
+
+/**
+Summary: Returns the ids of children nodes.
+
+Returns: Comma-delimited list of ids
+*/
+private function _childrenIds pChildrenA
+  local tNodeA, tIds
+
+  repeat for each element tNodeA in pChildrenA
+    put tNodeA["id"] & "," after tIds
+  end repeat
+  delete the last char of tIds
+  return tIds
+end _childrenIds
 
 
 private function _findNodeOfId pNodeId, pWithValidation
