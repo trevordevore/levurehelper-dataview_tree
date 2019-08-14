@@ -2685,20 +2685,22 @@ Summary: Looks for drags from one DataView tree to another.
 Returns: nothing
 */
 on dragMove
-  local tSourceDataView
-
   if "private" is among the lines of the keys of the fulldragData then
+    local tSourceDataView
+
     lock clipboard
     if line 1 of fulldragdata["private"] is sDataViewDragType then
       put line 4 of fulldragData["private"] into tSourceDataView
     end if
     unlock clipboard
+
+    if tSourceDataView is not empty and tSourceDataView is not the long id of me then
+      # Turn on tracking for content from a different DataView
+      set the dvTrackDragReorder of me to true
+    end if
   end if
 
-  if tSourceDataView is not the long id of me then
-    # Turn on tracking for content from a different DataView
-    set the dvTrackDragReorder of me to true
-  end if
+  pass dragMove
 end dragMove
 
 
