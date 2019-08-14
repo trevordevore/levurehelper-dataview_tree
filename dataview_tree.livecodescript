@@ -1592,7 +1592,7 @@ pNode: The node `id`.
 Description:
 If the node does not have a parent then empty is returned.
 
-Returns: Integer
+Returns: Mixed
 */
 getProp dvNodeParentNode[pNodeId]
   local tNodeIndexA
