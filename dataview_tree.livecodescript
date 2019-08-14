@@ -1204,6 +1204,16 @@ end dvRowChildren
 
 
 /**
+Summary: Returns a list of row children ids.
+
+Returns: Comma-delimited list
+*/
+getProp dvRowChildrenIds[pRow]
+  return _childrenIds(sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["children"])
+end dvRowChildrenIds
+
+
+/**
 Summary: Sets the child nodes of a node.
 
 Parameters:
@@ -1237,6 +1247,16 @@ Returns: Array
 getProp dvNodeChildren[pNodeId]
   return _getNodeProperty(pNodeId, "children")
 end dvNodeChildren
+
+
+/**
+Summary: Returns a list of node children ids.
+
+Returns: Comma-delimited list
+*/
+getProp dvNodeChildrenIds[pNodeId]
+  return _childrenIds(_getNodeProperty(pNodeId, "children"))
+end dvNodeChildrenIds
 
 
 /**
