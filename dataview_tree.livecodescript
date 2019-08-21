@@ -2613,7 +2613,6 @@ on dragStart
   local tNodeDescendantsA, tProposedNodeIds, tNodeIds, tRootNodeIds, tDescendantIds
 
   put the dvHilitedRows of me into tTargetRows
-  set the dvDragImageRow of me to item 1 of tTargetRows
 
   if tTargetRows is empty then exit dragStart
 
@@ -2675,6 +2674,9 @@ on dragStart
 
   unlock clipboard
 
+  # Important: set drageImage AFTER setting clipboard data. This allows PreDragImageSnapshot
+  #            to use that information when generating an image.
+  set the dvDragImageRow of me to item 1 of tTargetRows
   set the dvTrackDragReorder of me to true
 end dragStart
 
