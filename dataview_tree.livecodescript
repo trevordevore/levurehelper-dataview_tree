@@ -2762,6 +2762,8 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
           (sRowNodeIdLookupA[xProposedRow-1] is not among the items of tSourceNodeIds) then
       put xProposedRow - 1 into xProposedRow
       put "on" into xProposedDropOperation
+      # No longer targeting last row
+      put false into tDropIsAfterLastRow
     end if
   end if
 
