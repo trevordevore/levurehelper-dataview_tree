@@ -1,5 +1,6 @@
 script "DataView Tree Behavior" with behavior "DataView Behavior"
 constant kBuiltInProperties = "id,type,expanded,is leaf,children,level,child count"
+constant kDataViewDragType = "dataview tree nodes"
 
 local sTreeA
 local sNodeIdNodeLookupA # key = node id, value = node index array in sTreeA
@@ -2576,8 +2577,25 @@ private function _siblingInfo pNodeIndexA
 end _siblingInfo
 
 
-constant kDataViewDragType = "dataview tree nodes"
-local sDataViewDragType
+/**
+Summary: Return the id used to identify content that can be dropped onto this DataView.
+
+Description:
+The DataView Tree defines kDataViewDragType as the default type to use. This can
+be overridden using the `viewProp["drop operation identifer"]` custom property.
+This function returns the effective id.
+
+Returns: String
+*/
+private function _DataViewDragType
+  local tDropId
+
+  put the viewProp["drop operation identifier"] of me into tDropId
+  if tDropId is empty then
+    put kDataViewDragType into tDropId
+  end if
+  return tDropId
+end _DataViewDragType
 
 
 /**
@@ -2659,13 +2677,10 @@ on dragStart
 
   lock clipboard
 
-  put the viewProp["drop operation identifier"] of me into sDataViewDragType
-  if sDataViewDragType is empty then put kDataViewDragType into sDataViewDragType
-
   local tUserData
 
   dispatch "nodeDragStart" to the target with tRootNodeIds, tNodeIds, tUserData
-  set the fullDragData["private"] to sDataViewDragType & cr & \
+  set the fullDragData["private"] to _DataViewDragType() & cr & \
         tRootNodeIds & cr & \
         tNodeIds & cr & \
         the long id of me & cr & \
@@ -2691,7 +2706,7 @@ on dragMove
     local tSourceDataView
 
     lock clipboard
-    if line 1 of fulldragdata["private"] is sDataViewDragType then
+    if line 1 of fulldragdata["private"] is _DataViewDragType() then
       put line 4 of fulldragData["private"] into tSourceDataView
     end if
     unlock clipboard
@@ -2717,7 +2732,7 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
 
   if "private" is among the lines of the keys of the fulldragData then
     lock clipboard
-    if line 1 of fulldragdata["private"] is sDataViewDragType then
+    if line 1 of fulldragdata["private"] is _DataViewDragType() then
       put line 2 of fulldragData["private"] into tSourceRootNodeIds
       put line 3 of fulldragData["private"] into tSourceNodeIds
       put line 4 of fulldragData["private"] into tSourceDataView
