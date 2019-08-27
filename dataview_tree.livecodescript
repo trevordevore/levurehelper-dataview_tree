@@ -2811,51 +2811,60 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
   # Finalize drop level
   put max(tMinLevel, min(tDropLevel, tMaxLevel)) into tDropLevel
 
-  # Now that we know the level of the drop determine the target parent.
-  local tAncestorsA, tLevelDiff
+  # Now search range for a droplevel that works
+  local validationResult
 
-  put _ancestorElements(tNodeA) into tAncestorsA
+  repeat with tProposedDropLevel = tDropLevel down to tMinLevel
 
-  if tProposedRowLevel is tDropLevel then
-    # Sibling of proposed drop row
-    put tAncestorsA[1] into tParentNodeA
-    put _nodePosition(tNodeA) into tDropPosition
-    if xProposedDropOperation is "on" then
-      add 1 to tDropPosition
+    # Now that we know the level of the drop determine the target parent.
+    local tAncestorsA, tLevelDiff
+
+    put _ancestorElements(tNodeA) into tAncestorsA
+
+    if tProposedRowLevel is tProposedDropLevel then
+      # Sibling of proposed drop row
+      put tAncestorsA[1] into tParentNodeA
+      put _nodePosition(tNodeA) into tDropPosition
+      if xProposedDropOperation is "on" then
+        add 1 to tDropPosition
+      end if
+    else if tProposedRowLevel+1 is tProposedDropLevel then
+      # First child of proposed drop row
+      put tNodeA into tParentNodeA
+      put 1 into tDropPosition
+    else
+      # Ancestor of proposed drop row
+      put tProposedRowLevel - tProposedDropLevel into tLevelDiff
+      put tAncestorsA[tLevelDiff] into tNodeA
+      if tProposedDropLevel > 1 then
+        put tAncestorsA[tLevelDiff+1] into tParentNodeA
+      end if
+      put "on" into xProposedDropOperation
+      put _nodePosition(tNodeA) + 1 into tDropPosition
     end if
-  else if tProposedRowLevel+1 is tDropLevel then
-    # First child of proposed drop row
-    put tNodeA into tParentNodeA
-    put 1 into tDropPosition
-  else
-    # Ancestor of proposed drop row
-    put tProposedRowLevel - tDropLevel into tLevelDiff
-    put tAncestorsA[tLevelDiff] into tNodeA
-    if tDropLevel > 1 then
-      put tAncestorsA[tLevelDiff+1] into tParentNodeA
+
+    if tParentNodeA is an array then
+      put sTreeA[tParentNodeA]["id"] into tParentNodeId
     end if
-    put "on" into xProposedDropOperation
-    put _nodePosition(tNodeA) + 1 into tDropPosition
+
+    put tSourceRootNodeIds into xDraggingInfoA["root ids"]
+    put tSourceNodeIds into xDraggingInfoA["ids"]
+    put tSourceDataView into xDraggingInfoA["source control id"]
+    put tSourceStack into xDraggingInfoA["source stack"]
+    put tProposedDropLevel into xDraggingInfoA["drop level"]
+    put tUserData into xDraggingInfoA["user data"]
+
+    dispatch "ValidateNodeDrop" with xDraggingInfoA, tParentNodeId, tDropPosition
+    put the result into validationResult
+    if validationResult then exit repeat
+  end repeat
+
+  if validationResult then
+    put tParentNodeId into sDropInfoA["parentNodeId"]
+    put tDropPosition into sDropInfoA["childNodePosition"]
   end if
 
-  if tParentNodeA is an array then
-    put sTreeA[tParentNodeA]["id"] into tParentNodeId
-  end if
-
-  put tSourceRootNodeIds into xDraggingInfoA["root ids"]
-  put tSourceNodeIds into xDraggingInfoA["ids"]
-  put tSourceDataView into xDraggingInfoA["source control id"]
-  put tSourceStack into xDraggingInfoA["source stack"]
-  put tDropLevel into xDraggingInfoA["drop level"]
-  put tUserData into xDraggingInfoA["user data"]
-
-  dispatch "ValidateNodeDrop" with xDraggingInfoA, tParentNodeId, tDropPosition
-  if the result is false then return false
-
-  put tParentNodeId into sDropInfoA["parentNodeId"]
-  put tDropPosition into sDropInfoA["childNodePosition"]
-
-  return true
+  return validationResult
 end ValidateRowDrop
 
 
