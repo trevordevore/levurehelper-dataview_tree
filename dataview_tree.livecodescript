@@ -2911,15 +2911,7 @@ private function _rowDropValidatesAgainstRules pSourceRootNodeIds, pSourceNodeId
 
   set the wholematches to true
 
-  if tNodeId is the first item of pSourceNodeIds then
-    if not (pProposedDropOperation is "above") then
-      return false
-    end if
-  else if tNodeId is the last item of pSourceNodeIds then
-    if not (pProposedDropOperation is "on") then
-      return false
-    end if
-  else if pDropIsAfterLastRow then
+  if pDropIsAfterLastRow then
     # If dropping below the last node then make sure that the parent of the last row isn't part
     # of the dragoperation. The parent cannot become a descendant of itself.
     local tParentNodeA
@@ -2930,7 +2922,17 @@ private function _rowDropValidatesAgainstRules pSourceRootNodeIds, pSourceNodeId
       end if
     end if
   else if tNodeId is among the items of pSourceNodeIds then
-    return false
+    # Drop can occur if the target drop node isn't being dragged
+    if pProposedDropOperation is "above" then
+      return pProposedRow > 1 \
+            and sTreeA[sNodeIdNodeLookupA[sRowNodeIdLookupA[pProposedRow-1]]]["id"] \
+            is not among the items of pSourceNodeIds
+    else if pProposedDropOperation is "on" then
+      return sTreeA[sNodeIdNodeLookupA[sRowNodeIdLookupA[pProposedRow+1]]]["id"] \
+            is not among the items of pSourceNodeIds
+    else
+      return false
+    end if
   end if
 
   return true
