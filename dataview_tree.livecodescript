@@ -594,7 +594,7 @@ end PostDragImageSnapshot
 Summary: Expands all rows in the tree.
 
 Description:
-Call `RefreshView` to redraw the view.
+The view will be redrawn when callin this handler.
 
 Returns: nothing
 */
@@ -614,7 +614,7 @@ end ExpandAllNodes
 Summary: Contracts all rows in the tree.
 
 Description:
-Call `RefreshView` to redraw the view.
+The view will be redrawn when callin this handler.
 
 Returns: nothing
 */
