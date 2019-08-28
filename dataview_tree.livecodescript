@@ -597,7 +597,12 @@ Call `RefreshView` to redraw the view.
 Returns: nothing
 */
 command ExpandAllNodes
-  _setExpandedInTreeBranch sTreeA["root"]["children"], empty, true
+  local tIndexA
+
+  put "root" into tIndexA[1]
+  put "children" into tIndexA[2]
+
+  _setExpandedInTreeBranch sTreeA["root"]["children"], tIndexA, true
   put true into sRebuildLookupTable
   _refreshView
 end ExpandAllNodes
@@ -612,7 +617,12 @@ Call `RefreshView` to redraw the view.
 Returns: nothing
 */
 command CollapseAllNodes
-  _setExpandedInTreeBranch sTreeA["root"]["children"], empty, false
+  local tIndexA
+
+  put "root" into tIndexA[1]
+  put "children" into tIndexA[2]
+
+  _setExpandedInTreeBranch sTreeA["root"]["children"], tIndexA, false
   put true into sRebuildLookupTable
   _refreshView
 end CollapseAllNodes
