@@ -2799,20 +2799,28 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
     add 1 to tMaxLevel
   end if
 
+  loggerLogMsg xProposedDropOperation && xProposedRow
+
   # min level
   if tDropIsAfterLastRow then
     put 1 into tMinLevel
   else if xProposedDropOperation is "on" then
-    put _nodeLevel(sNodeIdNodeLookupA[sRowNodeIdLookupA[xProposedRow+1]]) into tMinLevel
+    # When dropping on the user is placing the node after the node being dropped on.
+    # The following row may be at a lower level in which case we want to give the user
+    # the ability to change the level.
+    # The minimum level is the minimum of the level of the following row or the current row.
+    put min(tProposedRowLevel, _nodeLevel(sNodeIdNodeLookupA[sRowNodeIdLookupA[xProposedRow+1]])) into tMinLevel
   else
     put tProposedRowLevel into tMinLevel
   end if
+
+  loggerLogMsg tDropLevel && tMinLevel && tMaxLevel
 
   # Finalize drop level
   put max(tMinLevel, min(tDropLevel, tMaxLevel)) into tDropLevel
 
   # Now search range for a droplevel that works
-  local validationResult
+  local validationResult = false
 
   repeat with tProposedDropLevel = tDropLevel down to tMinLevel
 
@@ -2839,7 +2847,6 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
       if tProposedDropLevel > 1 then
         put tAncestorsA[tLevelDiff+1] into tParentNodeA
       end if
-      put "on" into xProposedDropOperation
       put _nodePosition(tNodeA) + 1 into tDropPosition
     end if
 
