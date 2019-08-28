@@ -2773,13 +2773,12 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
   end if
 
   if tUpdateProposedRow then
-    if tDropIsAfterLastRow or \
-          (sRowNodeIdLookupA[xProposedRow-1] is not among the items of tSourceNodeIds) then
+      # Note: At this point the target row might be part of the ids being dragged.
+      # We will be dropping below it.
       put xProposedRow - 1 into xProposedRow
       put "on" into xProposedDropOperation
       # No longer targeting last row
       put false into tDropIsAfterLastRow
-    end if
   end if
 
   # No rules prohibit reorder so ask instance if drop is valid.
@@ -2794,27 +2793,35 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
   put _nodeLevel(tNodeA) into tProposedRowLevel
 
   # max level
-  put tProposedRowLevel into tMaxLevel
-  if xProposedDropOperation is "on" and not sTreeA[tNodeA]["is leaf"] then
-    add 1 to tMaxLevel
+  if xProposedDropOperation is "on" and not sTreeA[tNodeA]["is leaf"] \
+        and tNodeId is not among the items of tSourceNodeIds then
+    put tProposedRowLevel+1 into tMaxLevel
+  else
+    put tProposedRowLevel into tMaxLevel
   end if
-
-  loggerLogMsg xProposedDropOperation && xProposedRow
 
   # min level
   if tDropIsAfterLastRow then
     put 1 into tMinLevel
   else if xProposedDropOperation is "on" then
-    # When dropping on the user is placing the node after the node being dropped on.
-    # The following row may be at a lower level in which case we want to give the user
-    # the ability to change the level.
-    # The minimum level is the minimum of the level of the following row or the current row.
-    put min(tProposedRowLevel, _nodeLevel(sNodeIdNodeLookupA[sRowNodeIdLookupA[xProposedRow+1]])) into tMinLevel
+    # When dropping an only child between itself and its parent the parent level is the min level
+    local tNextRowNodeA, tNextRowParentA
+
+    put sNodeIdNodeLookupA[sRowNodeIdLookupA[xProposedRow+1]] into tNextRowNodeA
+    put _parentNodeIndex(tNextRowNodeA) into tNextRowParentA
+
+    # The next row will be among the source ids, it's parent will match the drop node, and the
+    # number of children of the parent will be 1.
+    if sTreeA[tNextRowNodeA]["id"] is among the items of tSourceNodeIds \
+          and sTreeA[tNextRowParentA]["id"] is tNodeId \
+          and the number of elements of sTreeA[tNextRowParentA]["children"] is 1 then
+      put tProposedRowLevel into tMinLevel
+    else
+      put _nodeLevel(sNodeIdNodeLookupA[sRowNodeIdLookupA[xProposedRow+1]]) into tMinLevel
+    end if
   else
     put tProposedRowLevel into tMinLevel
   end if
-
-  loggerLogMsg tDropLevel && tMinLevel && tMaxLevel
 
   # Finalize drop level
   put max(tMinLevel, min(tDropLevel, tMaxLevel)) into tDropLevel
