@@ -594,7 +594,7 @@ end PostDragImageSnapshot
 Summary: Expands all rows in the tree.
 
 Description:
-The view will be redrawn when callin this handler.
+The view will be redrawn when calling this handler.
 
 Returns: nothing
 */
