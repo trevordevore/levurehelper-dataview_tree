@@ -31,7 +31,7 @@ The DataView helper includes a command which can create DataView Tree group cont
 
 ## The tree array
 
-The DataView Tree uses an array that represents a tree. This array has the least amount of data needed in order for the DataView Tree to work. The actual data that is displayed in the UI will be provided by some other data source. This data is supplied to the DataView Tree by way of the `DataForNode` message.
+The DataView Tree uses an array that represents a tree. This array has the least amount of data needed in order for the DataView Tree to work. The data you want to display in the tree can be added to the tree array or be provided from another array (or other data source). This data will supplied to the DataView Tree by way of the `DataForNode` message.
 
 The array assigned to the `dvTree` property is a numerically indexed array of node arrays (arrays nested within an array). Each node array has the following keys:
 
@@ -71,7 +71,7 @@ pTreeA[2]["children"]
 
 A standard DataView sends the `DataForRow` message. Usually there is a 1-1 mapping of data from your data source to the rows displayed in the DataView. In a tree the 1-1 mapping doesn't usually exist as a node can be collapsed which hides it's children in the UI.
 
-Instead, a DataView Tree sends the `DataForNode` message. Your code must handle the `DataForNode` message in order to feed data to the DataView Tree for display. It looks very similar to the `DataForRow` message that a normal DataView receives but has one additional parameters – `pNodeA`. `pNodeA` contains the following keys:
+Instead, a DataView Tree sends the `DataForNode` message. Your code must handle the `DataForNode` message in order to feed data to the DataView Tree for display. It looks very similar to the `DataForRow` message that a standard DataView receives but has one additional parameter – `pNodeA`. `pNodeA` contains the following keys:
 
 - `id`
 - `type`
@@ -146,13 +146,13 @@ dispatch "ToggleRowIsExpanded" to group "MyDataView" with tRow
 
 The DataView Tree has a built in API for drag reordering. The API is an extension of the API built into the DataView. Drag reordering will be turned on by default. If you want to turn it off then set `the viewProp["allow drag reordering"]` of the DataView Tree group to `false`.
 
-If you plan on using drag reordering it is a good idea to set the `viewProp["drop operation identifier"]` property of the DataView Tree. This will uniquely identify the drag operation for that specific tree. For example, you might set the property to `categories` if your tree displays categories. If no value is set then `dataview tree nodes` is used. This value will be assigned to line 1 of the `dragData["private"]` when the user starts dragging a node in the tree.
+If you plan on using drag reordering it is a good idea to set the `viewProp["drop operation identifier"]` property of the DataView Tree. This will uniquely identify the drag operation for that specific tree. For example, you might set the property to `categories` if your tree displays categories. If no value is set then `dataview tree nodes` is used. This value will be assigned to line 1 of the `dragData["private"]` when the user starts dragging a node in the tree. Note that if two trees share the same `drop operation identiifer` you can drag rows between them.
 
 ### ValidateNodeDrop
 
 The DataView Tree will process the `ValidateRowDrop` message sent by the DataView behavior. You should not handle this message. Instead, the DataView Tree dispatches the `ValidateNodeDrop` message with the following parameters:
 
-1. pDraggingInfoA: Array with `action` (dragAction), `mouseH`, and `mouseV` `ids`, `root ids`, `drop level`, `source control id`, and `source stack` keys. The `mouseH` and `mouseV` keys are the same parameters passed to `dragMove`. The `ids` is a comma delimited list of node ids that are being dragged. If the user clicked on a parent node all descendant node ids will be included in this list as well. `root ids` are the ids which can be moved without affecting any of the parent/child relationships in the dragged nodes. The `drop level` is the level that the drop is will occur at. `source control id` is the long id of the DataView that started the drag operation. `source stack` is the short name of the stack the control
+1. pDraggingInfoA: Array with `action` (the `dragAction`), `mouseH`, and `mouseV` `ids`, `root ids`, `drop level`, `source control id`, and `source stack` keys. The `mouseH` and `mouseV` keys are the same parameters passed to `dragMove`. The `ids` is a comma delimited list of node ids that are being dragged. If the user clicked on a parent node all descendant node ids will be included in this list as well. `root ids` are the ids which can be moved without affecting any of the parent/child relationships in the dragged nodes. The `drop level` is the level that the drop is will occur at. `source control id` is the long id of the DataView that started the drag operation. `source stack` is the short name of the stack the control
 2. pProposedParentNodeId: The proposed id of the parent that the ids being dragged will be associated with.
 3. pProposedChildPosition: The proposed child position within the parent that the first id in the ids being dragged should be assigned to.
 
