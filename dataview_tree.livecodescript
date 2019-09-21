@@ -1,11 +1,13 @@
 script "DataView Tree Behavior" with behavior "DataView Behavior"
 constant kBuiltInProperties = "id,type,expanded,is leaf,children,level,child count"
+constant kDataViewDragType = "dataview tree nodes"
 
 local sTreeA
 local sNodeIdNodeLookupA # key = node id, value = node index array in sTreeA
 local sRowNodeIdLookupA # key = row, value = node id. Lookup in sNodeIdNodeLookupA.
 local sNodeIdRowLookupA # key = node id, value = row number
 local sRebuildLookupTable = false
+local sDropInfoA
 
 /**
 Summary: Sets the tree used to display source tree data.
@@ -569,9 +571,9 @@ Summary: Hide the treeline widget before creating the drag image for a row contr
 
 Returns: nothing
 */
-command PreDragImageSnapshot
-  if there is a widget "TreeLines" of the target then
-    set the visible of widget "TreeLines" of the target to false
+before PreDragImageSnapshot
+  if there is a control "TreeLines" of the target then
+    set the visible of control "TreeLines" of the target to false
   end if
 end PreDragImageSnapshot
 
@@ -581,9 +583,9 @@ Summary: Show the treeline widget after creating the drag image for a row contro
 
 Returns: nothing
 */
-command PostDragImageSnapshot
-  if there is a widget "TreeLines" of the target then
-    set the visible of widget "TreeLines" of the target to true
+before PostDragImageSnapshot
+  if there is a control "TreeLines" of the target then
+    set the visible of control "TreeLines" of the target to true
   end if
 end PostDragImageSnapshot
 
@@ -592,7 +594,7 @@ end PostDragImageSnapshot
 Summary: Expands all rows in the tree.
 
 Description:
-Call `RefreshView` to redraw the view.
+The view will be redrawn when calling this handler.
 
 Returns: nothing
 */
@@ -612,7 +614,7 @@ end ExpandAllNodes
 Summary: Contracts all rows in the tree.
 
 Description:
-Call `RefreshView` to redraw the view.
+The view will be redrawn when calling this handler.
 
 Returns: nothing
 */
@@ -1115,6 +1117,36 @@ end dvNodeIsLeaf
 
 
 /**
+Summary: Returns a numerically indexed array of node arrays at the root of the tree.
+
+Returns: Array
+*/
+getProp dvRootNodes
+  return sTreeA["root"]["children"]
+end dvRootNodes
+
+
+/**
+Summary: Returns the number of nodes at the root of the tree.
+
+Returns: Integer
+*/
+getProp dvRootNodeCount
+  return the number of elements of sTreeA["root"]["children"]
+end dvRootNodeCount
+
+
+/**
+Summary: Returns a list of ids at the root of the tree.
+
+Returns: Comma-delimited list
+*/
+getProp dvRootNodeIds
+  return _childrenIds(sTreeA["root"]["children"])
+end dvRootNodeIds
+
+
+/**
 Summary: Returns the number of children that a row has.
 
 Returns: Integer
@@ -1173,6 +1205,16 @@ end dvRowChildren
 
 
 /**
+Summary: Returns a list of row children ids.
+
+Returns: Comma-delimited list
+*/
+getProp dvRowChildrenIds[pRow]
+  return _childrenIds(sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["children"])
+end dvRowChildrenIds
+
+
+/**
 Summary: Sets the child nodes of a node.
 
 Parameters:
@@ -1209,13 +1251,44 @@ end dvNodeChildren
 
 
 /**
-Summary: Returns a list of sibling nodes.
+Summary: Returns a list of node children ids.
+
+Returns: Comma-delimited list
+*/
+getProp dvNodeChildrenIds[pNodeId]
+  return _childrenIds(_getNodeProperty(pNodeId, "children"))
+end dvNodeChildrenIds
+
+
+/**
+Summary: Returns the child node at the specified position.
+
+Parameters:
+pNodeId: The parent node id. Leave empty to target the root of the tree.
+pPosition: The position of the child node.
+
+Returns: Array or empty if no child exists at that position.
+*/
+function GetChildNodeAtPosition pNodeId, pPosition
+  if pNodeId is empty then
+    put "root" into pNodeId[1]
+  else
+    put _findNodeOfId(pNodeId, true) into pNodeId
+  end if
+
+  if pPosition is -1 then
+    return sTreeA[pNodeId]["children"][the number of elements of sTreeA[pNodeId]["children"]]
+  else
+    return sTreeA[pNodeId]["children"][pPosition]
+  end if
+end GetChildNodeAtPosition
+
+
+/**
+Summary: Returns an array of all children of the parent of pNodeId.
 
 Parameters:
 pNodeId: The target node id.
-
-Description:
-The list contains node pNodeId.
 
 Returns: Array
 */
@@ -1394,19 +1467,29 @@ end dvRowChildRows
 
 
 /**
-Summary: Returns an integer representing the position of `pRow` amongst it's siblings.
+Summary: Returns the position of the node relative to its parent.
+
+Parameters:
+pNodeId: The target node id.
+
+Returns: Integer
+*/
+getProp dvNodePosition[pNodeId]
+  return _nodePosition(sNodeIdNodeLookupA[pNodeId])
+end dvNodePosition
+
+
+/**
+Summary: Returns the position of the row relative to its parent.
 
 Parameters:
 pRow: The target row.
 
-Description:
-If pRow is the third child of it's parent then this property would return `3`.
-
 Returns: Integer
 */
-getProp dvRowSiblingOrder[pRow]
+getProp dvRowPosition[pRow]
   return _nodePosition(sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]])
-end dvRowSiblingOrder
+end dvRowPosition
 
 
 /**
@@ -1510,7 +1593,7 @@ pNode: The node `id`.
 Description:
 If the node does not have a parent then empty is returned.
 
-Returns: Integer
+Returns: Mixed
 */
 getProp dvNodeParentNode[pNodeId]
   local tNodeIndexA
@@ -1667,12 +1750,61 @@ end dvHilitedId
 
 
 /**
-Summary: Returns the `id` property of the selected row(s).
+Summary: Returns all ids that are implicitly included in the currently hilited rows.
+
+Description:
+When a parent node is selected an action such as "delete" or "move" would also
+move the descendants of the parent. This property returns all ids implied
+by the current selection.
+
+Returns: Comma-delimited list
+*/
+getProp dvEffectiveHilitedIds
+  return _effectiveHilitedIds()
+end dvEffectiveHilitedIds
+
+
+/**
+Summary: Returns the list of all ids inherent in the current selection.
+
+Description:
+The list that is returned includes the descendants of selected rows.
+
+Returns: Comma-delimited list
+*/
+private function _effectiveHilitedIds
+  local tRow, tNodeIds, tNodeId, tNodeA, tNodeDescendantsA
+
+  repeat for each item tRow in the dvHilitedRows of me
+    put sRowNodeIdLookupA[tRow] into tNodeId
+    put sNodeIdNodeLookupA[tNodeId] into tNodeA
+    put _descendantElements(tNodeA) into tNodeDescendantsA
+
+    if tNodeId is not among the items of tNodeIds then
+      put tNodeId & "," after tNodeIds
+    end if
+
+    if tNodeDescendantsA is an array then
+      repeat for each element tNodeA in tNodeDescendantsA
+        if sTreeA[tNodeA]["id"] is not among the items of tNodeIds then
+          put sTreeA[tNodeA]["id"] & "," after tNodeIds
+        end if
+      end repeat
+    end if
+  end repeat
+  delete the last char of tNodeIds
+
+  return tNodeIds
+end _effectiveHilitedIds
+
+
+/**
+Summary: Returns all data for each selected row.
 
 Description:
 If not rows are selected then empty is returned.
 
-Returns: Comma-delimited list of integers
+Returns: Array or numerically indexed array of node arrays.
 */
 getProp dvHilitedData
   local tRow, tRows, tIds
@@ -2059,6 +2191,22 @@ private function _nodeLevel pNodeIndexA
 end _nodeLevel
 
 
+/**
+Summary: Returns the ids of children nodes.
+
+Returns: Comma-delimited list of ids
+*/
+private function _childrenIds pChildrenA
+  local tNodeA, tIds
+
+  repeat for each element tNodeA in pChildrenA
+    put tNodeA["id"] & "," after tIds
+  end repeat
+  delete the last char of tIds
+  return tIds
+end _childrenIds
+
+
 private function _findNodeOfId pNodeId, pWithValidation
   local tIndexA, tFoundIndexA
 
@@ -2427,3 +2575,372 @@ private function _siblingInfo pNodeIndexA
 
   return tSiblingOrder,tChildCount
 end _siblingInfo
+
+
+/**
+Summary: Return the id used to identify content that can be dropped onto this DataView.
+
+Description:
+The DataView Tree defines kDataViewDragType as the default type to use. This can
+be overridden using the `viewProp["drop operation identifer"]` custom property.
+This function returns the effective id.
+
+Returns: String
+*/
+private function _DataViewDragType
+  local tDropId
+
+  put the viewProp["drop operation identifier"] of me into tDropId
+  if tDropId is empty then
+    put kDataViewDragType into tDropId
+  end if
+  return tDropId
+end _DataViewDragType
+
+
+/**
+Summary: Starts a drag and drop operation using the nodes associated with the selected rows.
+
+Description:
+This builds on top of the drag and drop support built into the DataView. The
+`fullDragData["private"]` will be set to a string used to carry out the drag operation. The first line
+will be `the viewProp["drop operation identifier"]` property of the view. If that is empty then the
+default value of `dataview tree nodes` is used. The second line is the list of node ids
+that are being dragged. The third line is the long id of the source DataView Tree and the fourth
+line is the short name of the source stack.
+
+After the clipboard is locked the `nodeDragStart` message will be sent to the target of the `dragStart` message.
+It will be passed three parameters:
+
+- pRootNodeIds: The ids at the root of the nodes being dragged. These are nodes which can be moved witout affecting the parent/child relationships of the nodes being dragged.
+- pNodeIds: The ids of the nodes that are being dragged.
+- @rUserData: Set this parameter to a value which will be included with the internal data in the `fullDragData["private"]` property. Cannot have more than 1 line.
+
+You can use this message to set additional `dragData` keys or to
+set the `@rUserData` parameter. The `@rUserData` parameter will appear in the `pDraggingInfoA["user data"]` key
+in the parameter passed to `ValidateNodeDrop` and `AcceptNodeDrop`.
+
+Returns: nothing
+*/
+on dragStart
+  if the viewProp["allow drag reordering"] of me is false then exit dragStart
+  if the mouseControl is empty or the dvRowControl of the mouseControl is empty then exit dragStart
+  if word 1 of the target is "field" and not the lockText of the target then exit dragStart
+
+  local tTargetRows, tRow, tNodeId, tNodeA
+  local tNodeDescendantsA, tProposedNodeIds, tNodeIds, tRootNodeIds, tDescendantIds
+
+  put the dvHilitedRows of me into tTargetRows
+
+  if tTargetRows is empty then exit dragStart
+
+  # First create a list of all descendant node ids. This list will be used
+  # to determine which of the selected rows is a root level node relative
+  # to the nodes that are being dragged. These are the nodes that can be moved
+  # without altering any of the parent/child relationships in the dragged data.
+  repeat for each item tRow in tTargetRows
+    put sRowNodeIdLookupA[tRow] into tNodeId
+    put sNodeIdNodeLookupA[tNodeId] into tNodeA
+    put _descendantElements(tNodeA) into tNodeDescendantsA
+
+    if tNodeDescendantsA is an array then
+      repeat for each element tNodeA in tNodeDescendantsA
+        # We don't mind duplicates in this list
+        put sTreeA[tNodeA]["id"] & "," after tDescendantIds
+      end repeat
+    end if
+  end repeat
+
+  # Now build up the list of all node ids and root node ids.
+  repeat for each item tRow in tTargetRows
+    put sRowNodeIdLookupA[tRow] into tNodeId
+    put sNodeIdNodeLookupA[tNodeId] into tNodeA
+    put _descendantElements(tNodeA) into tNodeDescendantsA
+
+    if tNodeId is not among the items of tDescendantIds then
+      put tNodeId & "," after tRootNodeIds
+    end if
+
+    if tNodeId is not among the items of tNodeIds then
+      put tNodeId & "," after tNodeIds
+    end if
+    if tNodeDescendantsA is an array then
+      repeat for each element tNodeA in tNodeDescendantsA
+        if sTreeA[tNodeA]["id"] is not among the items of tNodeIds then
+          put sTreeA[tNodeA]["id"] & "," after tNodeIds
+        end if
+      end repeat
+    end if
+  end repeat
+  delete the last char of tRootNodeIds
+  delete the last char of tNodeIds
+
+  lock clipboard
+
+  local tUserData
+
+  dispatch "nodeDragStart" to the target with tRootNodeIds, tNodeIds, tUserData
+  set the fullDragData["private"] to _DataViewDragType() & cr & \
+        tRootNodeIds & cr & \
+        tNodeIds & cr & \
+        the long id of me & cr & \
+        the short name of this stack & cr & \
+        line 1 of tUserData
+
+  unlock clipboard
+
+  # Important: set drageImage AFTER setting clipboard data. This allows PreDragImageSnapshot
+  #            to use that information when generating an image.
+  set the dvDragImageRow of me to item 1 of tTargetRows
+  set the dvTrackDragReorder of me to true
+end dragStart
+
+
+/**
+Summary: Looks for drags from one DataView tree to another.
+
+Returns: nothing
+*/
+on dragMove
+  if "private" is among the lines of the keys of the fulldragData then
+    local tSourceDataView
+
+    lock clipboard
+    if line 1 of fulldragdata["private"] is _DataViewDragType() then
+      put line 4 of fulldragData["private"] into tSourceDataView
+    end if
+    unlock clipboard
+
+    if tSourceDataView is not empty and tSourceDataView is not the long id of me then
+      # Turn on tracking for content from a different DataView
+      set the dvTrackDragReorder of me to true
+    end if
+  end if
+
+  pass dragMove
+end dragMove
+
+
+command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
+  local tSourceRootNodeIds, tSourceNodeIds, tSourceDataView, tSourceStack, tUserData
+  local tDropIsAfterLastRow, tParentNodeA, tParentNodeId, tDropPosition
+
+  set the wholematches to true
+
+  # Reset each time through
+  put empty into sDropInfoA
+
+  if "private" is among the lines of the keys of the fulldragData then
+    lock clipboard
+    if line 1 of fulldragdata["private"] is _DataViewDragType() then
+      put line 2 of fulldragData["private"] into tSourceRootNodeIds
+      put line 3 of fulldragData["private"] into tSourceNodeIds
+      put line 4 of fulldragData["private"] into tSourceDataView
+      put line 5 of fulldragData["private"] into tSourceStack
+      put line 6 of fulldragData["private"] into tUserData
+    end if
+    unlock clipboard
+  end if
+
+  put (xProposedRow is the number of elements of sRowNodeIdLookupA \
+        and xProposedDropOperation is "on") \
+        or (xProposedRow is the number of elements of sRowNodeIdLookupA + 1 \
+        and xProposedDropOperation is "above") into tDropIsAfterLastRow
+
+  if not _rowDropValidatesAgainstRules(tSourceRootNodeIds, tSourceNodeIds, xProposedRow, xProposedDropOperation, tDropIsAfterLastRow) then
+    return false
+  end if
+
+  # If dropping after last row or if proposed operation is "above" and the preceding
+  # row has a different level or same level and is a headng then the preceding row becomes
+  # the proposed row and the operation becomes "on" as long as the preceding row isn't
+  # part of the dragged ids.
+  local tUpdateProposedRow = false
+  local tPrevRowNodeA, tPrevRowLevel
+
+  put tDropIsAfterLastRow into tUpdateProposedRow
+  if not tUpdateProposedRow then
+    if xProposedRow > 1 and xProposedDropOperation is "above" then
+      put sNodeIdNodeLookupA[sRowNodeIdLookupA[xProposedRow-1]] into tPrevRowNodeA
+      put _nodeLevel(tPrevRowNodeA) into tPrevRowLevel
+      put the dvRowLevel[xProposedRow] of me is not tPrevRowLevel into tUpdateProposedRow
+
+      if not tUpdateProposedRow then
+        put the dvRowLevel[xProposedRow] of me is tPrevRowLevel and \
+              not sTreeA[tPrevRowNodeA]["is leaf"] into tUpdateProposedRow
+      end if
+    end if
+  end if
+
+  if tUpdateProposedRow then
+      # Note: At this point the target row might be part of the ids being dragged.
+      # We will be dropping below it.
+      put xProposedRow - 1 into xProposedRow
+      put "on" into xProposedDropOperation
+      # No longer targeting last row
+      put false into tDropIsAfterLastRow
+  end if
+
+  # No rules prohibit reorder so ask instance if drop is valid.
+  # Now determine the drop level
+  local tDropLevel, tNodeId, tNodeA
+  local tProposedRowLevel, tMaxLevel, tMinLevel
+
+  put _levelThatMouseIsAt(xDraggingInfoA["mouseH"]) into tDropLevel
+
+  put sRowNodeIdLookupA[xProposedRow] into tNodeId
+  put sNodeIdNodeLookupA[tNodeId] into tNodeA
+  put _nodeLevel(tNodeA) into tProposedRowLevel
+
+  # max level
+  if xProposedDropOperation is "on" and not sTreeA[tNodeA]["is leaf"] \
+        and tNodeId is not among the items of tSourceNodeIds then
+    put tProposedRowLevel+1 into tMaxLevel
+  else
+    put tProposedRowLevel into tMaxLevel
+  end if
+
+  # min level
+  if tDropIsAfterLastRow then
+    put 1 into tMinLevel
+  else if xProposedDropOperation is "on" then
+    # When dropping an only child between itself and its parent the parent level is the min level
+    local tNextRowNodeA, tNextRowParentA
+
+    put sNodeIdNodeLookupA[sRowNodeIdLookupA[xProposedRow+1]] into tNextRowNodeA
+    put _parentNodeIndex(tNextRowNodeA) into tNextRowParentA
+
+    # The next row will be among the source ids, it's parent will match the drop node, and the
+    # number of children of the parent will be 1.
+    if sTreeA[tNextRowNodeA]["id"] is among the items of tSourceNodeIds \
+          and sTreeA[tNextRowParentA]["id"] is tNodeId \
+          and the number of elements of sTreeA[tNextRowParentA]["children"] is 1 then
+      put tProposedRowLevel into tMinLevel
+    else
+      put _nodeLevel(sNodeIdNodeLookupA[sRowNodeIdLookupA[xProposedRow+1]]) into tMinLevel
+    end if
+  else
+    put tProposedRowLevel into tMinLevel
+  end if
+
+  # Finalize drop level
+  put max(tMinLevel, min(tDropLevel, tMaxLevel)) into tDropLevel
+
+  # Now search range for a droplevel that works
+  local validationResult = false
+
+  repeat with tProposedDropLevel = tDropLevel down to tMinLevel
+
+    # Now that we know the level of the drop determine the target parent.
+    local tAncestorsA, tLevelDiff
+
+    put _ancestorElements(tNodeA) into tAncestorsA
+
+    if tProposedRowLevel is tProposedDropLevel then
+      # Sibling of proposed drop row
+      put tAncestorsA[1] into tParentNodeA
+      put _nodePosition(tNodeA) into tDropPosition
+      if xProposedDropOperation is "on" then
+        add 1 to tDropPosition
+      end if
+    else if tProposedRowLevel+1 is tProposedDropLevel then
+      # First child of proposed drop row
+      put tNodeA into tParentNodeA
+      put 1 into tDropPosition
+    else
+      # Ancestor of proposed drop row
+      put tProposedRowLevel - tProposedDropLevel into tLevelDiff
+      put tAncestorsA[tLevelDiff] into tNodeA
+      if tProposedDropLevel > 1 then
+        put tAncestorsA[tLevelDiff+1] into tParentNodeA
+      end if
+      put _nodePosition(tNodeA) + 1 into tDropPosition
+    end if
+
+    if tParentNodeA is an array then
+      put sTreeA[tParentNodeA]["id"] into tParentNodeId
+    end if
+
+    put tSourceRootNodeIds into xDraggingInfoA["root ids"]
+    put tSourceNodeIds into xDraggingInfoA["ids"]
+    put tSourceDataView into xDraggingInfoA["source control id"]
+    put tSourceStack into xDraggingInfoA["source stack"]
+    put tProposedDropLevel into xDraggingInfoA["drop level"]
+    put tUserData into xDraggingInfoA["user data"]
+
+    dispatch "ValidateNodeDrop" with xDraggingInfoA, tParentNodeId, tDropPosition
+    put the result into validationResult
+    if validationResult then exit repeat
+  end repeat
+
+  if validationResult then
+    put tParentNodeId into sDropInfoA["parentNodeId"]
+    put tDropPosition into sDropInfoA["childNodePosition"]
+  end if
+
+  return validationResult
+end ValidateRowDrop
+
+
+command AcceptRowDrop pDraggingInfoA, pRow, pDropOperation
+  dispatch "AcceptNodeDrop" with pDraggingInfoA, \
+        sDropInfoA["parentNodeId"], \
+        sDropInfoA["childNodePosition"]
+end AcceptRowDrop
+
+
+/**
+Summary: Calculates the level of the outline tha the mouse is at based on horizontal position.
+
+Returns: Integer >= 1
+*/
+private function _levelThatMouseIsAt pMouseH
+  local tXOffset, tRootH
+
+  put max(0, item 1 of the viewProp["line inset"] of me) into tXOffset
+  add tXOffset to pMouseH
+  put the left of group "dvListMask" of me + tXOffset into tRootH
+  return max(1, (pMouseH - tRootH) div max(1, the viewProp["line spacing"] of me))
+end _levelThatMouseIsAt
+
+
+/**
+Summary: Checks for certain conditions which would automatically cancel a drop operation.
+
+Returns: Boolean
+*/
+private function _rowDropValidatesAgainstRules pSourceRootNodeIds, pSourceNodeIds, pProposedRow, pProposedDropOperation, pDropIsAfterLastRow
+  local tNodeId
+
+  if pSourceNodeIds is empty then return false
+
+  put sRowNodeIdLookupA[pProposedRow] into tNodeId
+
+  set the wholematches to true
+
+  if pDropIsAfterLastRow then
+    # If dropping below the last node then make sure that the parent of the last row isn't part
+    # of the dragoperation. The parent cannot become a descendant of itself.
+    local tParentNodeA
+    put _parentNodeIndex( sNodeIdNodeLookupA[sRowNodeIdLookupA[pProposedRow-1]] ) into tParentNodeA
+    if tParentNodeA is an array then
+      if sTreeA[tParentNodeA]["id"] is among the items of pSourceNodeIds then
+        return false
+      end if
+    end if
+  else if tNodeId is among the items of pSourceNodeIds then
+    # Drop can occur if the target drop node isn't being dragged
+    if pProposedDropOperation is "above" then
+      return pProposedRow > 1 \
+            and sTreeA[sNodeIdNodeLookupA[sRowNodeIdLookupA[pProposedRow-1]]]["id"] \
+            is not among the items of pSourceNodeIds
+    else if pProposedDropOperation is "on" then
+      return sTreeA[sNodeIdNodeLookupA[sRowNodeIdLookupA[pProposedRow+1]]]["id"] \
+            is not among the items of pSourceNodeIds
+    else
+      return false
+    end if
+  end if
+
+  return true
+end _rowDropValidatesAgainstRules
