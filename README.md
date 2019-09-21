@@ -146,7 +146,7 @@ dispatch "ToggleRowIsExpanded" to group "MyDataView" with tRow
 
 The DataView Tree has a built in API for drag reordering. The API is an extension of the API built into the DataView. Drag reordering will be turned on by default. If you want to turn it off then set `the viewProp["allow drag reordering"]` of the DataView Tree group to `false`.
 
-If you plan on using drag reordering it is a good idea to set the `viewProp["drop operation identifier"]` property of the DataView Tree. This will uniquely identify the drag operation for that specific tree. For example, you might set the property to `categories` if your tree displays categories. If no value is set then `dataview tree nodes` is used. This value will be assigned to line 1 of the `dragData["private"]` when the user starts dragging a node in the tree. Note that if two trees share the same `drop operation identiifer` you can drag rows between them.
+If you plan on using drag reordering it is a good idea to set the `viewProp["drop operation identifier"]` property of the DataView Tree. This will uniquely identify the drag operation for that specific tree. For example, you might set the property to `categories` if your tree displays categories. If no value is set then `dataview tree nodes` is used. This value will be assigned to line 1 of the `dragData["private"]` when the user starts dragging a node in the tree. Note that if two trees share the same `drop operation identifier` you can drag rows between them.
 
 ### ValidateNodeDrop
 
