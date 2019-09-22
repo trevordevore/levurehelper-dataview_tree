@@ -7,7 +7,7 @@ widget community.livecode.trevordevore.treelines
 
   metadata title is "Tree Lines"
   metadata author is "Trevor DeVore"
-  metadata version is "1.0.0"
+  metadata version is "1.0.1"
 
 
   private variable mLineColor       as Color
@@ -95,8 +95,10 @@ widget community.livecode.trevordevore.treelines
         line to point [tX+mLineSpacing,tHeight/2] on mLinePath
 
       else if tStyle is "parent" then
-        move to point [tX,tHeight/2] on mLinePath
-        line to point [tX-mLineSpacing,tHeight/2] on mLinePath
+        if tLevel > 1 then
+          move to point [tX,tHeight/2] on mLinePath
+          line to point [tX-mLineSpacing,tHeight/2] on mLinePath
+        end if
 
         move to point [tX,tHeight/2] on mLinePath
         line to point [tX,tHeight] on mLinePath
