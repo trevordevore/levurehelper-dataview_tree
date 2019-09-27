@@ -1209,9 +1209,9 @@ Summary: Returns a list of row children ids.
 
 Returns: Comma-delimited list
 */
-getProp dvRowChildrenIds[pRow]
+getProp dvRowChildIds[pRow]
   return _childrenIds(sTreeA[ sNodeIdNodeLookupA[sRowNodeIdLookupA[pRow]] ]["children"])
-end dvRowChildrenIds
+end dvRowChildIds
 
 
 /**
