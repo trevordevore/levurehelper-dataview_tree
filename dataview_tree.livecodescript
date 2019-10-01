@@ -2620,6 +2620,8 @@ You can use this message to set additional `dragData` keys or to
 set the `@rUserData` parameter. The `@rUserData` parameter will appear in the `pDraggingInfoA["user data"]` key
 in the parameter passed to `ValidateNodeDrop` and `AcceptNodeDrop`.
 
+To disallow drag reordering set `the viewProp["allow drag reordering"]` property to false.
+
 Returns: nothing
 */
 on dragStart
