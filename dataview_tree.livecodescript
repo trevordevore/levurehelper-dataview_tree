@@ -1593,9 +1593,9 @@ pNode: The node `id`.
 Description:
 If the node does not have a parent then empty is returned.
 
-Returns: Mixed
+Returns: Integer
 */
-getProp dvNodeParentNode[pNodeId]
+getProp dvNodeParentId[pNodeId]
   local tNodeIndexA
   put _findNodeOfId(pNodeId, true) into pNodeId
   put _parentNodeIndex(pNodeId) into tNodeIndexA
@@ -1605,6 +1605,16 @@ getProp dvNodeParentNode[pNodeId]
   else
     return empty
   end if
+end dvNodeParentId
+
+
+/**
+Summary: DEPRECATED! Use dvNodeParentId
+
+Returns: nothing
+*/
+getProp dvNodeParentNode[pNodeId]
+  return the dvNodeParentId[pNodeId] of me
 end dvNodeParentNode
 
 
