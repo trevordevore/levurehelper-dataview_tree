@@ -1251,13 +1251,13 @@ end dvNodeChildren
 
 
 /**
-Summary: Returns a list of node children ids.
+Summary: Returns a list of node child ids.
 
 Returns: Comma-delimited list
 */
-getProp dvNodeChildrenIds[pNodeId]
+getProp dvNodeChildIds[pNodeId]
   return _childrenIds(_getNodeProperty(pNodeId, "children"))
-end dvNodeChildrenIds
+end dvNodeChildIds
 
 
 /**
