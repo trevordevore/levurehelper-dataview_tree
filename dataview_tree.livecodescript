@@ -1760,6 +1760,27 @@ end dvHilitedId
 
 
 /**
+Summary: Returns all rows that are implicitly included in the currently hilited rows.
+
+Description:
+When a parent node is selected an action such as "delete" or "move" would also
+move the descendants of the parent. This property returns all rows implied
+by the current selection.
+
+Returns: Comma-delimited list
+*/
+getProp dvEffectiveHilitedRows
+  local tId, tRows
+
+  repeat for each item tId in _effectiveHilitedIds()
+    put _rowOfNode(tId) & "," after tRows
+  end repeat
+  delete the last char of tRows
+  return tRows
+end dvEffectiveHilitedRows
+
+
+/**
 Summary: Returns all ids that are implicitly included in the currently hilited rows.
 
 Description:
