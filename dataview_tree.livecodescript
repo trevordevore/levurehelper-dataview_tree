@@ -2334,7 +2334,8 @@ private command _showNode pNodeIndexA
 
   put _parentNodeIndex(pNodeIndexA) into pNodeIndexA
 
-  repeat while pNodeIndexA is an array
+  # Ignore node indexes that point to "root"
+  repeat while pNodeIndexA is an array and the number of elements of pNodeIndexA > 1
     if not sTreeA[pNodeIndexA]["is leaf"] and not sTreeA[pNodeIndexA]["expanded"] then
       _setNodeExpandedState pNodeIndexA, true
       put pNodeIndexA into tModifiedNodesA[the number of elements of tModifiedNodesA + 1]
