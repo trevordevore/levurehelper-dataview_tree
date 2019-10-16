@@ -2371,7 +2371,7 @@ private command _setNodeAncestorExpandedState pNodeIndexA, pExpandedState, pLeve
   put "children" into pNodeIndexA[tIndex]
   add 1 to tIndex
 
-  repeat with i = 1 to the number of elements of sTreeA[pNodeIndexA]["children"]
+  repeat with i = 1 to the number of elements of sTreeA[pNodeIndexA]
     put i into pNodeIndexA[tIndex]
     if sTreeA[pNodeIndexA]["expanded"] is not pExpandedState then
       _setNodeExpandedState pNodeIndexA, pExpandedState
