@@ -2009,8 +2009,10 @@ private function _renderTreeLines pLineInset, pLineSpacing, pLineStyles, pHeight
         break
 
       case "parent"
-        drawingTraceMoveTo tContext, tX, tYInset
-        drawingTraceLineTo tContext, tX-pLineSpacing, tYInset
+        if tLevel > 1 then
+          drawingTraceMoveTo tContext, tX, tYInset
+          drawingTraceLineTo tContext, tX-pLineSpacing, tYInset
+        end if
 
         drawingTraceMoveTo tContext, tX, tYInset
         drawingTraceLineTo tContext, tX, pHeight
