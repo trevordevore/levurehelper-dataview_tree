@@ -323,11 +323,11 @@ end _moveNodeToNewParent
 
 
 /**
-Summary: Deletes a node from the tree and marks affected rows as dirty.
+Summary: Deletes a node from the tree along with the associated row controls.
 
 Parameters:
 pNode: Node index lookup array.
-xDirtyIdsA: Array whose keys are ids that are dirty after this handler completes.
+xDirtyIdsA: Array whose keys are ids of nodes that are dirty after this handler completes.
 
 Returns: nothing
 */
