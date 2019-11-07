@@ -2793,6 +2793,7 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
   # part of the dragged ids.
   local tUpdateProposedRow = false
   local tPrevRowNodeA, tPrevRowLevel
+  local tAncestorsA
 
   put tDropIsAfterLastRow into tUpdateProposedRow
   if not tUpdateProposedRow then
@@ -2828,8 +2829,24 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
   put sNodeIdNodeLookupA[tNodeId] into tNodeA
   put _nodeLevel(tNodeA) into tProposedRowLevel
 
+  put _ancestorElements(tNodeA) into tAncestorsA
+
   # max level
-  if xProposedDropOperation is "on" and not sTreeA[tNodeA]["is leaf"] \
+  if tNodeId is among the items of tSourceNodeIds then
+    # Drop can be on a node being dragged.
+    local tAncestorA
+
+    put 1 into tMaxLevel
+
+    # Loop through ancestors until we find a node not being dragged
+    repeat for each element tAncestorA in tAncestorsA
+      if sTreeA[tAncestorA]["id"] is not among the items of tSourceNodeIds then
+        put _nodeLevel(tAncestorA)+1 into tMaxLevel
+        exit repeat
+      end if
+    end repeat
+
+  else if xProposedDropOperation is "on" and not sTreeA[tNodeA]["is leaf"] \
         and tNodeId is not among the items of tSourceNodeIds then
     put tProposedRowLevel+1 into tMaxLevel
   else
@@ -2837,7 +2854,8 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
   end if
 
   # min level
-  if tDropIsAfterLastRow then
+  if tDropIsAfterLastRow or tNodeId is among the items of tSourceNodeIds then
+    # If placing above self or after last row then node is free to move about the cabin
     put 1 into tMinLevel
   else if xProposedDropOperation is "on" then
     # When dropping an only child between itself and its parent the parent level is the min level
@@ -2856,6 +2874,7 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
       put _nodeLevel(sNodeIdNodeLookupA[sRowNodeIdLookupA[xProposedRow+1]]) into tMinLevel
     end if
   else
+    # dropping between two nodes not being dragged.
     put tProposedRowLevel into tMinLevel
   end if
 
@@ -2868,9 +2887,7 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
   repeat with tProposedDropLevel = tDropLevel down to tMinLevel
 
     # Now that we know the level of the drop determine the target parent.
-    local tAncestorsA, tLevelDiff
-
-    put _ancestorElements(tNodeA) into tAncestorsA
+    local tLevelDiff
 
     if tProposedRowLevel is tProposedDropLevel then
       # Sibling of proposed drop row
