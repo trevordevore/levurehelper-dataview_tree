@@ -893,6 +893,16 @@ end dvNodeOfId
 
 
 /**
+Summary: Same as dvRowOfNodeId, just shorter.
+
+Returns: Integer
+*/
+getProp dvRowOfId[pNodeId]
+  return _rowOfNode(pNodeId)
+end dvRowOfId
+
+
+/**
 Summary: Returns the row assigned to a node.
 
 Parameters:
@@ -905,9 +915,9 @@ ancestor that is not expanded.
 
 Returns: Integer
 */
-getProp dvRowOfId[pNodeId]
+getProp dvRowOfNodeId[pNodeId]
   return _rowOfNode(pNodeId)
-end dvRowOfId
+end dvRowOfNodeId
 
 
 /**
