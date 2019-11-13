@@ -2249,7 +2249,7 @@ private function _findNodeOfId pNodeId, pWithValidation
   put _searchBranchForNodeId(sTreeA["root"]["children"], tIndexA, pNodeId) into tFoundIndexA
   if tFoundIndexA is not an array then
     if pWithValidation then
-      throw "node id not found:" && pNodeId
+      throw "node id not found:" && pNodeId & cr & the executioncontexts
     else
       return empty
     end if
