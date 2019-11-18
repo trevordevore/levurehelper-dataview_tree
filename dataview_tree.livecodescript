@@ -2375,8 +2375,8 @@ private command _setNodeAncestorExpandedState pNodeIndexA, pExpandedState, pLeve
 
   put pExpandedState is true into pExpandedState
 
-  add 1 to tCurrentLevel
   put xCurrentLevel into tCurrentLevel
+  add 1 to tCurrentLevel
 
   local tIndex
   put the number of elements of pNodeIndexA + 1 into tIndex
