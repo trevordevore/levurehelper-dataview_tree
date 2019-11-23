@@ -647,7 +647,7 @@ then call `RefreshView` to redraw the view.
 Returns: Nothing
 */
 command SetRowIsExpanded pRow, pLevelsDown, pExpandedState, pRefreshView
-  if pRow < 1 then throw "invalid row:" && pRow
+  if pRow < 1 then throw "invalid row:" && pRow & cr & the executioncontexts
 
   SetNodeIsExpanded sRowNodeIdLookupA[pRow], pLevelsDown, pExpandedState, pRefreshView
 
@@ -679,8 +679,8 @@ command SetNodeIsExpanded pNode, pLevelsDown, pExpandedState, pRefreshView
 
   if pNode is not an array then put sNodeIdNodeLookupA[pNode] into pNode
 
-  if pNode is not an array then throw "invalid node id"
-  if sTreeA[pNode]["is leaf"] then throw "cannot change expanded setting of a leaf node"
+  if pNode is not an array then throw "invalid node id" & cr & the executioncontexts
+  if sTreeA[pNode]["is leaf"] then throw "cannot change expanded setting of a leaf node" & cr & the executioncontexts
 
   if pLevelsDown is empty then
     put 0 into pLevelsDown
@@ -1237,7 +1237,7 @@ Setting this property will not refresh the DataView.
 setProp dvNodeChildren[pNodeId] pNodesA
   put _findNodeOfId(pNodeId, true) into pNodeId
 
-  if sTreeA[ pNodeId ]["is leaf"] then throw "cannot set children property on a leaf node"
+  if sTreeA[ pNodeId ]["is leaf"] then throw "cannot set children property on a leaf node" & cr & the executioncontexts
 
   _setNodeProperty pNodeId, "children", pNodesA
 
@@ -2079,7 +2079,7 @@ private command _addBranchToRowToNodeLookup pTreeBranchA, pIndexA, @xRow, pBranc
 
   repeat for each element tNodeA in pTreeBranchA
     if sNodeIdNodeLookupA[tNodeA["id"]] is an array then
-      throw "duplicate node id in tree:" && tNodeA["id"]
+      throw "duplicate node id in tree:" && tNodeA["id"] & cr & the executioncontexts
     end if
 
     add 1 to tIndex
@@ -2342,7 +2342,7 @@ Returns: Array of node indexes that were expanded.
 private command _showNode pNodeIndexA
   local tModifiedNodesA
 
-  if pNodeIndexA is not an array then throw "invalid node index array"
+  if pNodeIndexA is not an array then throw "invalid node index array" & cr & the executioncontexts
 
   put _parentNodeIndex(pNodeIndexA) into pNodeIndexA
 
