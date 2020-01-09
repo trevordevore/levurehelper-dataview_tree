@@ -644,14 +644,15 @@ By default the DataView will be redrawn after calling this handler and the newly
 children nodes will be scrolled into view. If you pass in `false` for `pRefreshView`
 then call `RefreshView` to redraw the view.
 
-Returns: Nothing
+Returns `true` if the expanded state of any node was changed, `false` if not.
+
+Returns: Boolean
 */
 command SetRowIsExpanded pRow, pLevelsDown, pExpandedState, pRefreshView
   if pRow < 1 then throw "invalid row:" && pRow & cr & the executioncontexts
 
   SetNodeIsExpanded sRowNodeIdLookupA[pRow], pLevelsDown, pExpandedState, pRefreshView
-
-  return empty
+  return the result
 end SetRowIsExpanded
 
 
@@ -670,10 +671,13 @@ target node.
 
 See `SetRowIsExpanded` for more information.
 
-Returns: empty
+Returns `true` if the expanded state of any node was changed, `false` if not.
+
+Returns: Boolean
 */
 command SetNodeIsExpanded pNode, pLevelsDown, pExpandedState, pRefreshView
   local tRow, tCurrentLevel
+  local tMadeChange = false
 
   put pRefreshView is not false into pRefreshView
 
@@ -695,19 +699,23 @@ command SetNodeIsExpanded pNode, pLevelsDown, pExpandedState, pRefreshView
 
   # Toggle
   _setNodeExpandedState pNode, pExpandedState
+  put the result into tMadeChange
 
   # Affect children
   if pLevelsDown is not 0 then
     put 0 into tCurrentLevel
     _setNodeAncestorExpandedState pNode, sTreeA[pNode]["expanded"], \
           pLevelsDown, tCurrentLevel
+    if not tMadeChange then
+      put the result into tMadeChange
+    end if
   end if
 
   if pRefreshView then
     _refreshView
   end if
 
-  return empty
+  return tMadeChange
 end SetNodeIsExpanded
 
 
@@ -2310,7 +2318,10 @@ Parameters:
 pNodeIndexA: The node index array.
 pBoolean: The value to assign to the expanded state. Leave empty to toggle.
 
-Returns: empty
+Description:
+Returns `true` if the expanded state was changed, `false` if not.
+
+Returns: Boolean
 */
 private command _setNodeExpandedState pNodeIndexA, pBoolean
   if pBoolean is empty then
@@ -2324,10 +2335,11 @@ private command _setNodeExpandedState pNodeIndexA, pBoolean
       put pBoolean into sTreeA[pNodeIndexA]["expanded"]
       _setNodeRowIsDirty sTreeA[pNodeIndexA]["id"], true
       put true into sRebuildLookupTable
+      return true
     end if
   end if
 
-  return empty
+  return false
 end _setNodeExpandedState
 
 
@@ -2348,8 +2360,8 @@ private command _showNode pNodeIndexA
 
   # Ignore node indexes that point to "root"
   repeat while pNodeIndexA is an array and the number of elements of pNodeIndexA > 1
-    if not sTreeA[pNodeIndexA]["is leaf"] and not sTreeA[pNodeIndexA]["expanded"] then
-      _setNodeExpandedState pNodeIndexA, true
+    _setNodeExpandedState pNodeIndexA, true
+    if the result then
       put pNodeIndexA into tModifiedNodesA[the number of elements of tModifiedNodesA + 1]
     end if
     put _parentNodeIndex(pNodeIndexA) into pNodeIndexA
@@ -2368,10 +2380,14 @@ pExpandedState: True or false.
 pLevelsDown: The number of levels down to expand. Leave empty to expand all children.
 @rCurrentLevel: The current level that is being expanded. When this matches pLevelsDown or the last child is expanded then recursion stops.
 
-Returns: empty
+Description:
+Returns `true` if the expanded state of any node was changed, `false` if not.
+
+Returns: Boolean
 */
 private command _setNodeAncestorExpandedState pNodeIndexA, pExpandedState, pLevelsDown, @xCurrentLevel
   local tCurrentLevel
+  local tMadeChange = false
 
   put pExpandedState is true into pExpandedState
 
@@ -2385,17 +2401,19 @@ private command _setNodeAncestorExpandedState pNodeIndexA, pExpandedState, pLeve
 
   repeat with i = 1 to the number of elements of sTreeA[pNodeIndexA]
     put i into pNodeIndexA[tIndex]
-    if sTreeA[pNodeIndexA]["expanded"] is not pExpandedState then
-      _setNodeExpandedState pNodeIndexA, pExpandedState
-    end if
+    _setNodeExpandedState pNodeIndexA, pExpandedState
+    put the result into tMadeChange
 
     if tCurrentLevel is not pLevelsDown then
       _setNodeAncestorExpandedState pNodeIndexA, pExpandedState, pLevelsDown, xCurrentLevel
+      if not tMadeChange then
+        put the result into tMadeChange
+      end if
       put tCurrentLevel into xCurrentLevel # reset for next child in loop.
     end if
   end repeat
 
-  return empty
+  return tMadeChange
 end _setNodeAncestorExpandedState
 
 
