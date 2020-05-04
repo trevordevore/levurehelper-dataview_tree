@@ -26,15 +26,14 @@ If your LiveCode application uses the Levure framework then the DataView Tree ca
 If your LiveCode application is not using the Levure framework then you can use the **dataview_tree_loader.livecodescript** file to load the necessary stacks into memory.
 
 1. Download the latest release of **Source Code.zip|tar.gz** from https://github.com/trevordevore/levurehelper-dataview_tree/releases
-2. Unzip the contents and add the resulting folder to your application folder.
-3. In your application code start using the **dataview_tree_loader.livecodescript** stack file.
+2. Unzip the contents, rename the resulting folder to **dataview_tree**, and add the folder to your application folder.
+3. Using the property inspector your application stack, Add all of the stack files in the **dataview_tree** folder to the `mainstacks` property of your application stack.
+3. In your application code start using the **DataView Tree Assets Loader** stack and then remove it from memory.
 
 ```
-put _parentFolder() & "/dataview_tree_loader.livecodescript" into tStackfile
-start using stack tStackfile
+start using stack "DataView Tree Assets Loader"
+delete stack "DataView Tree Assets Loader"
 ```
-
-This will load the necessary files and then delete the loader stack from memory.
 
 ## Usage
 
