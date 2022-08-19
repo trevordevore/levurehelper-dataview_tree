@@ -2811,7 +2811,10 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
         or (xProposedRow is the number of elements of sRowNodeIdLookupA + 1 \
         and xProposedDropOperation is "above") into tDropIsAfterLastRow
 
-  if not _rowDropValidatesAgainstRules(tSourceRootNodeIds, tSourceNodeIds, xProposedRow, xProposedDropOperation, tDropIsAfterLastRow) then
+  local tDropLevel
+  put _levelThatMouseIsAt(xDraggingInfoA["mouseH"]) into tDropLevel
+
+  if not _rowDropValidatesAgainstRules(tSourceRootNodeIds, tSourceNodeIds, xProposedRow, xProposedDropOperation, tDropIsAfterLastRow, tDropLevel) then
     return false
   end if
 
@@ -2848,10 +2851,8 @@ command ValidateRowDrop @xDraggingInfoA, @xProposedRow, @xProposedDropOperation
 
   # No rules prohibit reorder so ask instance if drop is valid.
   # Now determine the drop level
-  local tDropLevel, tNodeId, tNodeA
+  local tNodeId, tNodeA
   local tProposedRowLevel, tMaxLevel, tMinLevel
-
-  put _levelThatMouseIsAt(xDraggingInfoA["mouseH"]) into tDropLevel
 
   put sRowNodeIdLookupA[xProposedRow] into tNodeId
   put sNodeIdNodeLookupA[tNodeId] into tNodeA
@@ -2990,7 +2991,7 @@ Summary: Checks for certain conditions which would automatically cancel a drop o
 
 Returns: Boolean
 */
-private function _rowDropValidatesAgainstRules pSourceRootNodeIds, pSourceNodeIds, pProposedRow, pProposedDropOperation, pDropIsAfterLastRow
+private function _rowDropValidatesAgainstRules pSourceRootNodeIds, pSourceNodeIds, pProposedRow, pProposedDropOperation, pDropIsAfterLastRow, pDropLevel
   local tNodeId
 
   if pSourceNodeIds is empty then return false
@@ -3000,15 +3001,19 @@ private function _rowDropValidatesAgainstRules pSourceRootNodeIds, pSourceNodeId
   set the wholematches to true
 
   if pDropIsAfterLastRow then
-    # If dropping below the last node then make sure that the parent of the last row isn't part
-    # of the dragoperation. The parent cannot become a descendant of itself.
-    local tParentNodeA
-    put _parentNodeIndex( sNodeIdNodeLookupA[sRowNodeIdLookupA[pProposedRow-1]] ) into tParentNodeA
-    if tParentNodeA is an array then
-      if sTreeA[tParentNodeA]["id"] is among the items of pSourceNodeIds then
+    # A node cannot become a descendant of itself
+    # No drop can occur if dropping below the last node,
+    # and an ancestor of last row is being dragged,
+    # and an ancestor has an `indent level` of >= the drop level
+    local tAncestorNodesA, tParentNodeA, tIncluded
+    put _ancestorElements( sNodeIdNodeLookupA[sRowNodeIdLookupA[pProposedRow-1]] ) into tAncestorNodesA
+    repeat for each element tParentNodeA in tAncestorNodesA
+      put sTreeA[tParentNodeA]["id"] is among the items of pSourceNodeIds into tIncluded
+      if not tIncluded then exit repeat
+      if sTreeA[tParentNodeA]["indent level"] <= pDropLevel then
         return false
       end if
-    end if
+    end repeat
   else if tNodeId is among the items of pSourceNodeIds then
     # Drop can occur if the target drop node isn't being dragged
     if pProposedDropOperation is "above" then
